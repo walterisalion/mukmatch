@@ -4,6 +4,7 @@
 <title>MukMatch</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<script src="config.js"></script>
 <style>
 :root{--bg:#FFF0F3;--card:#fff;--ink:#2A0F18;--mute:#7d5a64;--red:#8E1B34;--gold:#F6B92B;--pink:#FF4F8B;--line:#f1cdd6}
 @media(prefers-color-scheme:dark){:root{--bg:#1a0b11;--card:#2a141c;--ink:#ffeef2;--mute:#c79aa6;--line:#4a2431}}
@@ -35,7 +36,6 @@ input,select,textarea{width:100%;padding:12px;border-radius:14px;border:1.5px so
 .pcard[data-d="like"]::after{opacity:1;color:#12a150}.pcard[data-d="pass"]::after{opacity:1;color:#d6224f}
 .pic{height:300px;display:grid;place-items:center;font-size:7rem;position:relative;background:linear-gradient(160deg,#ff7eb3,#8E1B34) center/cover;cursor:pointer}
 .pic .nm{position:absolute;left:16px;bottom:12px;color:#fff;font-size:1.7rem;font-weight:800;text-shadow:0 2px 8px rgba(0,0,0,.4)}
-.pic .vb{position:absolute;right:14px;bottom:14px;background:var(--gold);color:#2A0F18;border-radius:999px;font-size:.75rem;font-weight:800;padding:4px 10px}
 .dots{position:absolute;top:10px;left:12px;right:12px;display:flex;gap:4px}.dots i{flex:1;height:4px;border-radius:4px;background:rgba(255,255,255,.45)}.dots i.on{background:#fff}
 .pbody{padding:14px 16px 16px}
 .quote{margin:10px 0;padding:10px 12px;background:var(--bg);border-left:4px solid var(--pink);border-radius:8px;font-weight:600}
@@ -63,14 +63,12 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 <body><div class="wrap">
 <div class="logo">Muk<b>Match</b></div>
 
-<section id="s-config" class="scr hide"><h1>One step left</h1><div class="panel">Open <code>index.html</code>, find <code>CFG</code> near the top of the script, and paste your Supabase Project URL and anon key. Steps are in README.md.</div></section>
+<section id="s-config" class="scr hide"><h1>One step left</h1><div class="panel">Create a file named <code>config.js</code> next to <code>index.html</code> and paste your Supabase Project URL and anon key into it. Steps are in README.md.</div></section>
 
 <section id="s-login" class="scr hide">
-<h1>Find your person on the Hill.</h1><p class="meta" id="lead">For Makerere students only. Sign in with your university email.</p>
-<div class="panel" id="st1"><label for="em">Muk email</label><input id="em" type="email" placeholder="you@students.mak.ac.ug" autocomplete="email"><div id="pwbox" class="hide"><label for="pw">Password (6+ characters)</label><input id="pw" type="password" autocomplete="current-password"></div><div class="err" id="e1"></div>
-<button class="btn gold" id="send" style="width:100%">Send my code</button><button class="btn ghost hide" id="signin" style="width:100%;margin-top:8px">Sign in</button></div>
-<div class="panel hide" id="st2"><p>We emailed you a code. Enter it below.</p><label for="code">Code</label><input id="code" inputmode="numeric" maxlength="10" autocomplete="one-time-code"><div class="err" id="e2"></div>
-<button class="btn" id="ver" style="width:100%">Verify</button></div>
+<h1>Find your person on the Hill.</h1><p class="meta" id="lead">Meet students across campus. Create an account with any email address.</p>
+<div class="panel" id="st1"><label for="em">Email</label><input id="em" type="email" placeholder="you@gmail.com" autocomplete="email"><div id="pwbox"><label for="pw">Password (6+ characters)</label><input id="pw" type="password" autocomplete="current-password"></div><div class="err" id="e1"></div>
+<button class="btn gold" id="send" style="width:100%">Create account</button><button class="btn ghost" id="signin" style="width:100%;margin-top:8px">Sign in</button></div>
 </section>
 
 <section id="s-setup" class="scr hide"><h2 id="stitle">Build your profile</h2><div class="panel">
@@ -99,14 +97,13 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 <nav id="tabs" class="hide"><button data-v="discover" class="on"><span>💘</span>Discover</button><button data-v="matches"><span>💬</span>Matches</button><button data-v="buzz"><span>🔥</span>Buzz</button><button data-v="events"><span>🎉</span>Events</button><button data-v="me"><span>🙂</span>You</button></nav>
 
 <script>
-const CFG={url:'https://njwnkidpkpoygzxjkdft.supabase.co/rest/v1/',key:'sb_publishable_SMP4QdIYhAj84R3XCPBnOQ_5mNYRLTl',test:true};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const MAK=/^[^@\s]+@(students\.)?mak\.ac\.ug$/i;
 const COL=['CoCIS','CEDAT','CHUSS','CAES','CoNAS','CHS','CoBAMS','Law','Education'];
-const HALL=['Mary Stuart Hall','Lumumba Hall','Africa Hall','University Hall','Complex Hall','Off-campus: Wandegeya','Off-campus: Kikoni','Off-campus: Makerere Kivulu','At home'];
+const HALLS={Female:['Mary Stuart Hall','Africa Hall','Complex Hall'],Male:['Lumumba Hall','Livingstone Hall','Mitchell Hall','Nkrumah Hall','Nsibirwa Hall','University Hall']};
+const OFF=['Private hostel near campus','Off-campus: Wandegeya','Off-campus: Kikoni','Off-campus: Makerere Kivulu','At home'];
 const INT=['Afrobeats','Gospel','Football','Debate','Tech','Fashion','Movies','Gym','Poetry','Food','Travel','Gaming'];
-let sb,uid,me,email,editing=false,tmp=[],sel=new Set(),queue=[],urlMap={},cardUrls=[],ci=0,mplist=[],cur=null,msgs=[],chan=null,busy=false,moved=0,cap=false;
+let sb,uid,me,editing=false,tmp=[],sel=new Set(),queue=[],urlMap={},cardUrls=[],ci=0,mplist=[],cur=null,msgs=[],chan=null,busy=false,moved=0,cap=false;
 const err=(s,t)=>$(s).textContent=t;
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
 function modal(h,cb){const m=document.createElement('div');m.className='modal';m.innerHTML='<div class="box">'+h+'</div>';m.onclick=e=>{const x=e.target.closest('[data-x]');if(e.target===m||x){m.remove();x&&cb&&cb(x.dataset.x)}};document.body.appendChild(m)}
@@ -117,38 +114,33 @@ const bgOf=p=>{const u=urlMap[p.photos[0]];return u?`background-image:url("${u}"
 
 /* start */
 (async function init(){
-if(CFG.url.includes('YOUR-PROJECT'))return show('s-config');
+if(typeof CFG==='undefined'||CFG.url.includes('YOUR-PROJECT'))return show('s-config');
 let base;try{base=new URL(CFG.url.trim())}catch{return show('s-config')}
 if(/(^|\.)supabase\.com$/.test(base.hostname))return show('s-config');
 sb=supabase.createClient(base.origin,CFG.key.trim());
-if(CFG.test){$('#pwbox').classList.remove('hide');$('#signin').classList.remove('hide');$('#send').textContent='Create account';$('#lead').textContent='Test mode: any email address works. No emails are sent.'}
 const{data:{session}}=await sb.auth.getSession();session?boot(session.user):show('s-login')})();
 
 /* sign in */
-$('#send').onclick=async()=>{if(CFG.test)return testAuth('up');const e=$('#em').value.trim().toLowerCase();
-if(!MAK.test(e))return err('#e1','Use your Makerere email ending in @students.mak.ac.ug or @mak.ac.ug.');
-err('#e1','Sending…');const{error}=await sb.auth.signInWithOtp({email:e,options:{shouldCreateUser:true}});
-if(error)return err('#e1',/database error|only makerere/i.test(error.message)?'Only Makerere emails can join.':error.message);
-email=e;$('#st1').classList.add('hide');$('#st2').classList.remove('hide')};
-$('#ver').onclick=async()=>{const{data,error}=await sb.auth.verifyOtp({email,token:$('#code').value.trim(),type:'email'});
-if(error)return err('#e2','That code is wrong or expired. Go back and request a new one.');boot(data.user)};
+$('#send').onclick=()=>auth('up');
 async function boot(u){uid=u.id;const{data}=await sb.from('profiles').select('*').eq('id',uid).maybeSingle();
-if(!data){$('#fc').innerHTML=COL.map(c=>`<option>${c}</option>`).join('');$('#fh').innerHTML=HALL.map(c=>`<option>${c}</option>`).join('');
+if(!data){$('#fc').innerHTML=COL.map(c=>`<option>${c}</option>`).join('');setHalls();
 $('#fi').innerHTML=INT.map(i=>`<button type="button" class="chip">${i}</button>`).join('');return show('s-setup')}
 me=data;app()}
 
-/* test mode: email and password, no emails sent */
-async function testAuth(mode){const e=$('#em').value.trim().toLowerCase(),p=$('#pw').value;
+/* sign up and sign in: email and password, any email address */
+async function auth(mode){const e=$('#em').value.trim().toLowerCase(),p=$('#pw').value;
 if(!/^\S+@\S+\.\S+$/.test(e))return err('#e1','Enter a valid email address.');
 if(p.length<6)return err('#e1','Password must be at least 6 characters.');
 err('#e1',mode==='up'?'Creating your account…':'Signing in…');
 const r=mode==='up'?await sb.auth.signUp({email:e,password:p}):await sb.auth.signInWithPassword({email:e,password:p});
-if(r.error)return err('#e1',r.error.message);
-if(!r.data.session)return err('#e1','Account created, but Supabase still wants email confirmation. Turn off "Confirm email" in Authentication > Sign In / Providers > Email.');
+if(r.error)return err('#e1',/not confirmed/i.test(r.error.message)?'Please click the confirmation link we emailed you, then sign in.':r.error.message);
+if(!r.data.session)return err('#e1','Almost there! We emailed you a confirmation link. Click it, then come back and sign in.');
 boot(r.data.user)}
-$('#signin').onclick=()=>testAuth('in');
+$('#signin').onclick=()=>auth('in');
 
 /* profile setup */
+function setHalls(){const g=$('#fg').value,keep=$('#fh').value,l=[...HALLS[g],...OFF];$('#fh').innerHTML=l.map(c=>`<option>${c}</option>`).join('');if(l.includes(keep))$('#fh').value=keep}
+$('#fg').onchange=setHalls;
 $('#fi').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;b.classList.toggle('on');b.classList.contains('on')?sel.add(b.textContent):sel.delete(b.textContent)};
 function square(f){return new Promise((ok,no)=>{const i=new Image(),u=URL.createObjectURL(f);i.onerror=no;i.onload=()=>{const S=800,m=Math.min(i.width,i.height),c=document.createElement('canvas');c.width=c.height=S;
 c.getContext('2d').drawImage(i,(i.width-m)/2,(i.height-m)/2,m,m,0,0,S,S);URL.revokeObjectURL(u);c.toBlob(b=>b?ok(b):no(),'image/jpeg',.82)};i.src=u})}
@@ -178,7 +170,7 @@ queue=(data||[]).filter(p=>!s.has(p.id));draw()}
 async function draw(){const p=queue[0],d=$('#deck');$('#acts').classList.toggle('hide',!p);
 if(!p){d.innerHTML='<div class="empty"><b>You have seen everyone for now 👀</b>Check Campus Buzz, then come back as more students join.</div>';return}
 await sign(p.photos);if(queue[0]!==p)return;cardUrls=p.photos.map(x=>urlMap[x]).filter(Boolean);ci=0;
-d.innerHTML=`<div class="pcard" id="pc"><div class="pic" id="pic" style="${bgOf(p)}">${cardUrls.length?'':'🙂'}${cardUrls.length>1?`<div class="dots">${cardUrls.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}<div class="nm">${esc(p.name)}, ${p.age}</div><div class="vb">✔ Verified Muk</div></div>
+d.innerHTML=`<div class="pcard" id="pc"><div class="pic" id="pic" style="${bgOf(p)}">${cardUrls.length?'':'🙂'}${cardUrls.length>1?`<div class="dots">${cardUrls.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}<div class="nm">${esc(p.name)}, ${p.age}</div></div>
 <div class="pbody"><div class="meta">${esc(p.college)} · Year ${p.year} · ${esc(p.hall)}</div>${p.prompt?`<div class="quote">“${esc(p.prompt)}”</div>`:''}<div class="chips">${p.interests.map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
 <div class="safe"><button id="rep">Report</button><button id="blk">Block</button></div></div></div>`;
 $('#rep').onclick=()=>report(p);$('#blk').onclick=async()=>{await block(p);queue.shift();draw()};drag($('#pc'))}
@@ -238,9 +230,9 @@ $('#elist').onclick=async e=>{const b=e.target.closest('button');if(!b)return;co
 const{error}=b.dataset.on==='1'?await q.delete().match(k):await q.insert(k);if(error)toast('Could not update your RSVP');loadEvents()};
 
 /* edit profile */
-function initForm(){$('#fc').innerHTML=COL.map(c=>`<option>${c}</option>`).join('');$('#fh').innerHTML=HALL.map(c=>`<option>${c}</option>`).join('');$('#fi').innerHTML=INT.map(i=>`<button type="button" class="chip">${i}</button>`).join('')}
+function initForm(){$('#fc').innerHTML=COL.map(c=>`<option>${c}</option>`).join('');setHalls();$('#fi').innerHTML=INT.map(i=>`<button type="button" class="chip">${i}</button>`).join('')}
 async function editProfile(){editing=true;await sign(me.photos);tmp=me.photos.map(path=>({path}));sel=new Set(me.interests);initForm();
-$('#fn').value=me.name;$('#fg').value=me.gender;$('#fw').value=me.want;$('#fa').value=me.age;$('#fy').value=me.year;$('#fc').value=me.college;$('#fh').value=me.hall;$('#fq').value=me.prompt||'';
+$('#fn').value=me.name;$('#fg').value=me.gender;setHalls();$('#fw').value=me.want;$('#fa').value=me.age;$('#fy').value=me.year;$('#fc').value=me.college;$('#fh').value=me.hall;$('#fq').value=me.prompt||'';
 $$('#fi .chip').forEach(c=>c.classList.toggle('on',sel.has(c.textContent)));paintTh();
 $('#save').disabled=false;$('#save').textContent='Save changes';$('#stitle').textContent='Edit profile';err('#e3','');$('#cancel').classList.remove('hide');show('s-setup')}
 $('#edit').onclick=editProfile;
