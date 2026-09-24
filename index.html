@@ -69,6 +69,8 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 <h1>Find your person on the Hill.</h1><p class="meta" id="lead">Meet students across campus. Create an account with any email address.</p>
 <div class="panel" id="st1"><label for="em">Email</label><input id="em" type="email" placeholder="you@gmail.com" autocomplete="email"><div id="pwbox"><label for="pw">Password (6+ characters)</label><input id="pw" type="password" autocomplete="current-password"></div><div class="err" id="e1"></div>
 <button class="btn gold" id="send" style="width:100%">Create account</button><button class="btn ghost" id="signin" style="width:100%;margin-top:8px">Sign in</button><button type="button" id="forgot" style="background:none;color:var(--mute);text-decoration:underline;margin-top:12px;padding:4px">Forgot password?</button></div>
+<div class="panel hide" id="st2"><p>We emailed a code to <b id="cem"></b>. Enter it below to confirm your email.</p><label for="code">Code</label><input id="code" inputmode="numeric" maxlength="10" autocomplete="one-time-code"><div class="err" id="e2"></div>
+<button class="btn" id="ver" style="width:100%">Confirm</button><button type="button" id="resend" style="background:none;color:var(--mute);text-decoration:underline;margin-top:12px;padding:4px">Send a new code</button></div>
 </section>
 
 <section id="s-reset" class="scr hide"><h2>Choose a new password</h2><div class="panel"><label for="np">New password (6+ characters)</label><input id="np" type="password" autocomplete="new-password"><div class="err" id="e4"></div><button class="btn" id="setpw" style="width:100%">Save new password</button></div></section>
@@ -104,7 +106,7 @@ const COL=['CoCIS','CEDAT','CHUSS','CAES','CoNAS','CHS','CoBAMS','Law','Educatio
 const HALLS={Female:['Mary Stuart Hall','Africa Hall','Complex Hall'],Male:['Lumumba Hall','Livingstone Hall','Mitchell Hall','Nkrumah Hall','Nsibirwa Hall','University Hall']};
 const OFF=['Private hostel near campus','Off-campus: Wandegeya','Off-campus: Kikoni','Off-campus: Makerere Kivulu','At home'];
 const INT=['Afrobeats','Gospel','Football','Debate','Tech','Fashion','Movies','Gym','Poetry','Food','Travel','Gaming'];
-let sb,uid,me,editing=false,tmp=[],sel=new Set(),queue=[],urlMap={},cardUrls=[],ci=0,mplist=[],cur=null,msgs=[],chan=null,busy=false,moved=0,cap=false;
+let sb,uid,me,pendingEmail,editing=false,tmp=[],sel=new Set(),queue=[],urlMap={},cardUrls=[],ci=0,mplist=[],cur=null,msgs=[],chan=null,busy=false,moved=0,cap=false;
 const err=(s,t)=>$(s).textContent=t;
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
 function modal(h,cb){const m=document.createElement('div');m.className='modal';m.innerHTML='<div class="box">'+h+'</div>';m.onclick=e=>{const x=e.target.closest('[data-x]');if(e.target===m||x){m.remove();x&&cb&&cb(x.dataset.x)}};document.body.appendChild(m)}
@@ -138,10 +140,17 @@ if(!/^\S+@\S+\.\S+$/.test(e))return err('#e1','Enter a valid email address.');
 if(p.length<6)return err('#e1','Password must be at least 6 characters.');
 err('#e1',mode==='up'?'Creating your account…':'Signing in…');
 const r=mode==='up'?await sb.auth.signUp({email:e,password:p,options:{emailRedirectTo:location.origin+location.pathname}}):await sb.auth.signInWithPassword({email:e,password:p});
-if(r.error)return err('#e1',/not confirmed/i.test(r.error.message)?'Please click the confirmation link we emailed you, then sign in.':r.error.message);
-if(!r.data.session)return err('#e1','Almost there! We emailed you a confirmation link. Click it, then come back and sign in.');
+if(r.error){if(/not confirmed/i.test(r.error.message)){pendingEmail=e;await sb.auth.resend({type:'signup',email:e});return showCode('Your email is not confirmed yet. We sent you a new code.')}return err('#e1',r.error.message)}
+if(!r.data.session){pendingEmail=e;return showCode('')}
 boot(r.data.user)}
 $('#signin').onclick=()=>auth('in');
+function showCode(msg){$('#st1').classList.add('hide');$('#st2').classList.remove('hide');$('#cem').textContent=pendingEmail;$('#code').value='';err('#e2',msg||'')}
+$('#ver').onclick=async()=>{const t=$('#code').value.trim();if(!t)return err('#e2','Enter the code from your email.');
+err('#e2','Checking…');let r=await sb.auth.verifyOtp({email:pendingEmail,token:t,type:'signup'});
+if(r.error)r=await sb.auth.verifyOtp({email:pendingEmail,token:t,type:'email'});
+if(r.error||!r.data.session)return err('#e2','That code is wrong or expired. Tap "Send a new code".');
+boot(r.data.user)};
+$('#resend').onclick=async()=>{const{error}=await sb.auth.resend({type:'signup',email:pendingEmail});err('#e2',error?error.message:'A new code is on its way. Check your spam folder too.')};
 $('#forgot').onclick=async()=>{const e=$('#em').value.trim().toLowerCase();
 if(!/^\S+@\S+\.\S+$/.test(e))return err('#e1','Type your email above first, then tap Forgot password.');
 err('#e1','Sending…');const{error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.origin+location.pathname});
