@@ -68,9 +68,10 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 <section id="s-login" class="scr hide">
 <h1>Find your person on the Hill.</h1><p class="meta" id="lead">Meet students across campus. Create an account with any email address.</p>
 <div class="panel" id="st1"><label for="em">Email</label><input id="em" type="email" placeholder="you@gmail.com" autocomplete="email"><div id="pwbox"><label for="pw">Password (6+ characters)</label><input id="pw" type="password" autocomplete="current-password"></div><div class="err" id="e1"></div>
-<button class="btn gold" id="send" style="width:100%">Create account</button><button class="btn ghost" id="signin" style="width:100%;margin-top:8px">Sign in</button></div>
+<button class="btn gold" id="send" style="width:100%">Create account</button><button class="btn ghost" id="signin" style="width:100%;margin-top:8px">Sign in</button><button type="button" id="forgot" style="background:none;color:var(--mute);text-decoration:underline;margin-top:12px;padding:4px">Forgot password?</button></div>
 </section>
 
+<section id="s-reset" class="scr hide"><h2>Choose a new password</h2><div class="panel"><label for="np">New password (6+ characters)</label><input id="np" type="password" autocomplete="new-password"><div class="err" id="e4"></div><button class="btn" id="setpw" style="width:100%">Save new password</button></div></section>
 <section id="s-setup" class="scr hide"><h2 id="stitle">Build your profile</h2><div class="panel">
 <label for="fn">First name</label><input id="fn" maxlength="20">
 <div class="row"><div><label for="fg">I am</label><select id="fg"><option>Female</option><option>Male</option></select></div><div><label for="fw">Looking for</label><select id="fw"><option>Male</option><option>Female</option></select></div></div>
@@ -118,7 +119,11 @@ if(typeof CFG==='undefined'||CFG.url.includes('YOUR-PROJECT'))return show('s-con
 let base;try{base=new URL(CFG.url.trim())}catch{return show('s-config')}
 if(/(^|\.)supabase\.com$/.test(base.hostname))return show('s-config');
 sb=supabase.createClient(base.origin,CFG.key.trim());
-const{data:{session}}=await sb.auth.getSession();session?boot(session.user):show('s-login')})();
+if(/error_code=|error_description=/.test(location.hash)){show('s-login');err('#e1','That email link has expired or was already used. Please request a new one.');history.replaceState(null,'',location.pathname);return}
+const rec=/type=recovery/.test(location.hash);
+const{data:{session}}=await sb.auth.getSession();
+if(rec&&session)return show('s-reset');
+session?boot(session.user):show('s-login')})();
 
 /* sign in */
 $('#send').onclick=()=>auth('up');
@@ -137,6 +142,13 @@ if(r.error)return err('#e1',/not confirmed/i.test(r.error.message)?'Please click
 if(!r.data.session)return err('#e1','Almost there! We emailed you a confirmation link. Click it, then come back and sign in.');
 boot(r.data.user)}
 $('#signin').onclick=()=>auth('in');
+$('#forgot').onclick=async()=>{const e=$('#em').value.trim().toLowerCase();
+if(!/^\S+@\S+\.\S+$/.test(e))return err('#e1','Type your email above first, then tap Forgot password.');
+err('#e1','Sending…');const{error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.origin+location.pathname});
+err('#e1',error?error.message:'If that email has an account, a reset link is on its way. Check your spam folder too.')};
+$('#setpw').onclick=async()=>{const p=$('#np').value;if(p.length<6)return err('#e4','Password must be at least 6 characters.');
+const{data,error}=await sb.auth.updateUser({password:p});if(error)return err('#e4',error.message);
+history.replaceState(null,'',location.pathname);toast('Password updated');boot(data.user)};
 
 /* profile setup */
 function setHalls(){const g=$('#fg').value,keep=$('#fh').value,l=[...HALLS[g],...OFF];$('#fh').innerHTML=l.map(c=>`<option>${c}</option>`).join('');if(l.includes(keep))$('#fh').value=keep}
