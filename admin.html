@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>MukMatch organiser</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<script src="config.js"></script>
+<style>
+:root{--bg:#FFF0F3;--card:#fff;--ink:#2A0F18;--mute:#7d5a64;--red:#8E1B34;--gold:#F6B92B;--pink:#FF4F8B;--line:#f1cdd6}
+@media(prefers-color-scheme:dark){:root{--bg:#1a0b11;--card:#2a141c;--ink:#ffeef2;--mute:#c79aa6;--line:#4a2431}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,sans-serif;line-height:1.45}
+button,input{font:inherit;color:inherit}button{cursor:pointer;border:0}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:720px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(40px + env(safe-area-inset-bottom,0px))}
+.hide{display:none!important}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.logo{font-weight:800;font-size:1.5rem;letter-spacing:-.03em;color:var(--red)}.logo b{color:var(--pink)}.logo small{font-size:.8rem;color:var(--mute);font-weight:600}
+h2{font-size:1.5rem;letter-spacing:-.03em;margin:.4em 0}
+.btn{background:var(--red);color:#fff;padding:12px 20px;border-radius:999px;font-weight:800}.btn.ghost{background:none;border:2px solid var(--line);color:var(--ink)}.btn.sm{padding:8px 14px;font-size:.9rem}.btn.danger{background:#b3122e}.btn:disabled{opacity:.4;cursor:default}
+.panel,.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px}
+.meta{color:var(--mute);font-size:.9rem}
+label{display:block;font-weight:600;font-size:.9rem;margin:12px 0 4px}
+input{width:100%;padding:12px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg)}
+input[type=checkbox]{width:auto}
+.err{color:#d6224f;font-size:.9rem;min-height:1.2em;margin-top:6px}
+#tabs{display:flex;gap:6px;margin-bottom:12px}
+#tabs button{flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px;font-weight:600;color:var(--mute)}#tabs button.on{background:var(--red);color:#fff;border-color:var(--red)}
+.ph{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.ph img{width:88px;height:88px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
+.tag{display:inline-block;background:var(--gold);color:#2A0F18;border-radius:999px;font-weight:800;font-size:.8rem;padding:2px 10px;margin:8px 0 4px}
+.rs{border-left:3px solid var(--pink);padding:4px 10px;margin:6px 0;overflow-wrap:anywhere}.rs.done{opacity:.5}
+.row2{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.empty{text-align:center;padding:32px 12px;color:var(--mute)}.empty b{display:block;font-size:1.2rem;color:var(--ink)}
+.ev{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;z-index:12;font-weight:600;max-width:90%}
+</style></head>
+<body><div class="wrap">
+<header><div class="logo">Muk<b>Match</b> <small>organiser</small></div><button id="out" class="btn ghost sm hide">Sign out</button></header>
+
+<section id="s-config" class="scr hide"><div class="panel">Create <code>config.js</code> next to this file with your Supabase URL and anon key. See README.md.</div></section>
+
+<section id="s-login" class="scr hide"><h2>Organiser sign in</h2><div class="panel">
+<p class="meta">Use the same email and password you use in MukMatch. Only accounts added as organisers can get in.</p>
+<label for="em">Email</label><input id="em" type="email" autocomplete="email"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password">
+<div class="err" id="e1"></div><button class="btn" id="go" style="width:100%">Sign in</button></div></section>
+
+<section id="s-denied" class="scr hide"><div class="panel"><h2>No access</h2><p>This account is not an organiser. Ask the site owner to add you, then sign in again.</p></div></section>
+
+<section id="s-dash" class="scr hide">
+<div id="tabs"><button data-t="reports" class="on">Reports</button><button data-t="events">Events</button><button data-t="log">Log</button></div>
+
+<div id="v-reports" class="vw"><label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:0 0 12px"><input type="checkbox" id="showres"> Show handled reports too</label><div id="rlist"></div></div>
+
+<div id="v-events" class="vw hide"><div class="panel"><h2 id="etitle" style="margin-top:0">Add an event</h2>
+<label for="et">Title</label><input id="et" maxlength="80"><label for="eb">Short description (optional)</label><input id="eb" maxlength="120"><label for="ed">Date and time</label><input id="ed" type="datetime-local">
+<div class="err" id="e2"></div><div class="row2" style="margin-top:0"><button class="btn sm" id="esave">Add event</button><button class="btn ghost sm hide" id="ecancel">Cancel edit</button></div></div><div id="elist"></div></div>
+
+<div id="v-log" class="vw hide"><p class="meta">A record of every profile removed from the site.</p><div id="llist"></div></div>
+</section>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const err=(s,t)=>$(s).textContent=t;
+let sb,G={},EV={},editId=null,urlMap={};
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function show(id){$$('.scr').forEach(s=>s.classList.add('hide'));$('#'+id).classList.remove('hide');$('#out').classList.toggle('hide',id==='s-login'||id==='s-config')}
+function tab(t){$$('.vw').forEach(s=>s.classList.add('hide'));$('#v-'+t).classList.remove('hide');$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+if(t==='reports')loadReports();if(t==='events')loadEvents();if(t==='log')loadLog()}
+async function sign(paths){const need=paths.filter(x=>x&&!urlMap[x]);if(!need.length)return;const{data}=await sb.storage.from('photos').createSignedUrls(need,3600);(data||[]).forEach(d=>{if(d.signedUrl)urlMap[d.path]=d.signedUrl})}
+
+(async function init(){
+if(typeof CFG==='undefined'||CFG.url.includes('YOUR-PROJECT'))return show('s-config');
+let base;try{base=new URL(CFG.url.trim())}catch{return show('s-config')}
+sb=supabase.createClient(base.origin,CFG.key.trim());
+const{data:{session}}=await sb.auth.getSession();session?gate():show('s-login')})();
+async function gate(){const{data,error}=await sb.from('admins').select('user_id').maybeSingle();
+if(error||!data)return show('s-denied');show('s-dash');tab('reports')}
+$('#go').onclick=async()=>{err('#e1','Signing in…');const{error}=await sb.auth.signInWithPassword({email:$('#em').value.trim().toLowerCase(),password:$('#pw').value});
+if(error)return err('#e1',error.message);err('#e1','');gate()};
+$('#pw').onkeydown=e=>{if(e.key==='Enter')$('#go').click()};
+$('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)tab(b.dataset.t)};
+
+/* reports, grouped by the person reported */
+$('#showres').onchange=loadReports;
+async function loadReports(){const el=$('#rlist');el.innerHTML='<div class="empty">Loading…</div>';
+let q=sb.from('reports').select('*').order('created_at',{ascending:false}).limit(300);if(!$('#showres').checked)q=q.eq('resolved',false);
+const{data:rs,error}=await q;if(error){el.innerHTML='<div class="empty">'+esc(error.message)+'</div>';return}
+const ids=[...new Set(rs.flatMap(r=>[r.reported,r.reporter]).filter(Boolean))];
+const{data:ps}=ids.length?await sb.from('profiles').select('*').in('id',ids):{data:[]};
+const P=Object.fromEntries((ps||[]).map(p=>[p.id,p]));
+G={};rs.forEach(r=>{if(r.reported&&P[r.reported])(G[r.reported]=G[r.reported]||[]).push(r)});
+await sign(Object.keys(G).flatMap(id=>P[id].photos));
+el.innerHTML=Object.entries(G).map(([id,list])=>{const p=P[id],open=list.filter(r=>!r.resolved).length;
+return `<div class="card"><div class="ph">${p.photos.map(x=>urlMap[x]?`<a href="${urlMap[x]}" target="_blank" rel="noopener"><img src="${urlMap[x]}" alt="Photo of ${esc(p.name)}"></a>`:'').join('')}</div>
+<b>${esc(p.name)}, ${p.age}</b> <span class="meta">${p.gender} · ${esc(p.college)} · Year ${p.year} · ${esc(p.hall)}</span>
+<div class="meta">Joined ${new Date(p.created_at).toLocaleDateString()}${p.prompt?' · “'+esc(p.prompt)+'”':''}</div>
+<div class="tag">${list.length} report${list.length>1?'s':''}${open<list.length?' ('+open+' open)':''}</div>
+${list.map(r=>`<div class="rs ${r.resolved?'done':''}">${esc(r.reason||'(no reason given)')} <span class="meta">— ${P[r.reporter]?esc(P[r.reporter].name):'a student'}, ${new Date(r.created_at).toLocaleString()}</span></div>`).join('')}
+<div class="row2"><button class="btn ghost sm" data-a="dismiss" data-id="${id}" ${open?'':'disabled'}>Dismiss reports</button><button class="btn danger sm" data-a="remove" data-id="${id}">Remove and ban</button></div></div>`}).join('')
+||'<div class="empty"><b>No open reports 🎉</b>Nothing needs your attention.</div>'}
+$('#rlist').onclick=async e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const id=b.dataset.id,list=G[id]||[];
+if(b.dataset.a==='dismiss'){const{error}=await sb.from('reports').update({resolved:true}).in('id',list.filter(r=>!r.resolved).map(r=>r.id));
+toast(error?error.message:'Reports dismissed');return loadReports()}
+if(b.dataset.a==='remove'){const note=prompt('Why are you removing this profile? This note goes in the log.','');if(note===null)return;
+if(!confirm('Remove this profile and ban the account? They cannot create another profile with it. This cannot be undone here.'))return;
+const{data:paths,error}=await sb.rpc('admin_remove_profile',{target:id,note});if(error)return toast(error.message);
+if(paths&&paths.length)await sb.storage.from('photos').remove(paths);toast('Profile removed and account banned');loadReports()}};
+
+/* events */
+const toLocal=iso=>{const d=new Date(iso);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)};
+function resetForm(){editId=null;$('#et').value=$('#eb').value=$('#ed').value='';err('#e2','');$('#etitle').textContent='Add an event';$('#esave').textContent='Add event';$('#ecancel').classList.add('hide')}
+async function loadEvents(){const[{data:ev,error},{data:cn}]=await Promise.all([sb.from('events').select('*').order('starts_at',{ascending:false}).limit(60),sb.from('event_counts').select('*')]);
+if(error){$('#elist').innerHTML='<div class="empty">'+esc(error.message)+'</div>';return}
+const n=Object.fromEntries((cn||[]).map(x=>[x.event_id,x.n]));EV=Object.fromEntries(ev.map(e=>[e.id,e]));
+$('#elist').innerHTML=ev.map(e=>{const past=new Date(e.starts_at)<new Date();
+return `<div class="card ev" style="${past?'opacity:.6':''}"><div><b>${esc(e.title)}</b>${past?' <span class="meta">(past)</span>':''}<div class="meta">${esc(e.blurb||'')}</div><div class="meta">${new Date(e.starts_at).toLocaleString()} · ${n[e.id]||0} going</div></div>
+<div class="row2" style="margin:0"><button class="btn ghost sm" data-a="edit" data-id="${e.id}">Edit</button><button class="btn danger sm" data-a="del" data-id="${e.id}">Delete</button></div></div>`}).join('')||'<div class="empty"><b>No events yet</b>Add the first one above.</div>'}
+$('#elist').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const id=+b.dataset.id;
+if(b.dataset.a==='edit'){const x=EV[id];editId=id;$('#et').value=x.title;$('#eb').value=x.blurb||'';$('#ed').value=toLocal(x.starts_at);$('#etitle').textContent='Edit event';$('#esave').textContent='Save changes';$('#ecancel').classList.remove('hide');scrollTo(0,0)}
+if(b.dataset.a==='del'){if(!confirm('Delete this event and its RSVPs?'))return;const{error}=await sb.from('events').delete().eq('id',id);toast(error?error.message:'Event deleted');loadEvents()}};
+$('#esave').onclick=async()=>{const t=$('#et').value.trim(),d=$('#ed').value;if(!t||!d)return err('#e2','Add a title and a date.');
+const row={title:t,blurb:$('#eb').value.trim()||null,starts_at:new Date(d).toISOString()};
+const{error}=editId?await sb.from('events').update(row).eq('id',editId):await sb.from('events').insert(row);
+if(error)return err('#e2',error.message);resetForm();toast('Event saved');loadEvents()};
+$('#ecancel').onclick=resetForm;
+
+/* moderation log */
+async function loadLog(){const{data,error}=await sb.from('mod_log').select('*').order('created_at',{ascending:false}).limit(100);
+if(error){$('#llist').innerHTML='<div class="empty">'+esc(error.message)+'</div>';return}
+$('#llist').innerHTML=(data||[]).map(l=>`<div class="card"><b>${esc(l.target_name||'Unknown')}</b> <span class="meta">removed ${new Date(l.created_at).toLocaleString()}</span>
+<div>${esc(l.note||'(no note)')}</div>${(l.report_reasons||[]).length?`<div class="meta">Reports at the time: ${l.report_reasons.map(r=>esc(r||'no reason')).join(' · ')}</div>`:''}</div>`).join('')||'<div class="empty"><b>Nothing here yet</b>Removals will be listed.</div>'}
+</script></body></html>
