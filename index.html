@@ -66,9 +66,9 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 <section id="s-config" class="scr hide"><h1>One step left</h1><div class="panel">Open <code>index.html</code>, find <code>CFG</code> near the top of the script, and paste your Supabase Project URL and anon key. Steps are in README.md.</div></section>
 
 <section id="s-login" class="scr hide">
-<h1>Find your person on the Hill.</h1><p class="meta">For Makerere students only. Sign in with your university email.</p>
-<div class="panel" id="st1"><label for="em">Muk email</label><input id="em" type="email" placeholder="you@students.mak.ac.ug" autocomplete="email"><div class="err" id="e1"></div>
-<button class="btn gold" id="send" style="width:100%">Send my code</button></div>
+<h1>Find your person on the Hill.</h1><p class="meta" id="lead">For Makerere students only. Sign in with your university email.</p>
+<div class="panel" id="st1"><label for="em">Muk email</label><input id="em" type="email" placeholder="you@students.mak.ac.ug" autocomplete="email"><div id="pwbox" class="hide"><label for="pw">Password (6+ characters)</label><input id="pw" type="password" autocomplete="current-password"></div><div class="err" id="e1"></div>
+<button class="btn gold" id="send" style="width:100%">Send my code</button><button class="btn ghost hide" id="signin" style="width:100%;margin-top:8px">Sign in</button></div>
 <div class="panel hide" id="st2"><p>We emailed you a code. Enter it below.</p><label for="code">Code</label><input id="code" inputmode="numeric" maxlength="10" autocomplete="one-time-code"><div class="err" id="e2"></div>
 <button class="btn" id="ver" style="width:100%">Verify</button></div>
 </section>
@@ -99,7 +99,7 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 <nav id="tabs" class="hide"><button data-v="discover" class="on"><span>💘</span>Discover</button><button data-v="matches"><span>💬</span>Matches</button><button data-v="buzz"><span>🔥</span>Buzz</button><button data-v="events"><span>🎉</span>Events</button><button data-v="me"><span>🙂</span>You</button></nav>
 
 <script>
-const CFG={url:'https://njwnkidpkpoygzxjkdft.supabase.co/rest/v1/',key:'sb_publishable_SMP4QdIYhAj84R3XCPBnOQ_5mNYRLTl'};
+const CFG={url:'https://njwnkidpkpoygzxjkdft.supabase.co/rest/v1/',key:'sb_publishable_SMP4QdIYhAj84R3XCPBnOQ_5mNYRLTl',test:true};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MAK=/^[^@\s]+@(students\.)?mak\.ac\.ug$/i;
@@ -121,10 +121,11 @@ if(CFG.url.includes('YOUR-PROJECT'))return show('s-config');
 let base;try{base=new URL(CFG.url.trim())}catch{return show('s-config')}
 if(/(^|\.)supabase\.com$/.test(base.hostname))return show('s-config');
 sb=supabase.createClient(base.origin,CFG.key.trim());
+if(CFG.test){$('#pwbox').classList.remove('hide');$('#signin').classList.remove('hide');$('#send').textContent='Create account';$('#lead').textContent='Test mode: any email address works. No emails are sent.'}
 const{data:{session}}=await sb.auth.getSession();session?boot(session.user):show('s-login')})();
 
 /* sign in */
-$('#send').onclick=async()=>{const e=$('#em').value.trim().toLowerCase();
+$('#send').onclick=async()=>{if(CFG.test)return testAuth('up');const e=$('#em').value.trim().toLowerCase();
 if(!MAK.test(e))return err('#e1','Use your Makerere email ending in @students.mak.ac.ug or @mak.ac.ug.');
 err('#e1','Sending…');const{error}=await sb.auth.signInWithOtp({email:e,options:{shouldCreateUser:true}});
 if(error)return err('#e1',/database error|only makerere/i.test(error.message)?'Only Makerere emails can join.':error.message);
@@ -135,6 +136,17 @@ async function boot(u){uid=u.id;const{data}=await sb.from('profiles').select('*'
 if(!data){$('#fc').innerHTML=COL.map(c=>`<option>${c}</option>`).join('');$('#fh').innerHTML=HALL.map(c=>`<option>${c}</option>`).join('');
 $('#fi').innerHTML=INT.map(i=>`<button type="button" class="chip">${i}</button>`).join('');return show('s-setup')}
 me=data;app()}
+
+/* test mode: email and password, no emails sent */
+async function testAuth(mode){const e=$('#em').value.trim().toLowerCase(),p=$('#pw').value;
+if(!/^\S+@\S+\.\S+$/.test(e))return err('#e1','Enter a valid email address.');
+if(p.length<6)return err('#e1','Password must be at least 6 characters.');
+err('#e1',mode==='up'?'Creating your account…':'Signing in…');
+const r=mode==='up'?await sb.auth.signUp({email:e,password:p}):await sb.auth.signInWithPassword({email:e,password:p});
+if(r.error)return err('#e1',r.error.message);
+if(!r.data.session)return err('#e1','Account created, but Supabase still wants email confirmation. Turn off "Confirm email" in Authentication > Sign In / Providers > Email.');
+boot(r.data.user)}
+$('#signin').onclick=()=>testAuth('in');
 
 /* profile setup */
 $('#fi').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;b.classList.toggle('on');b.classList.contains('on')?sel.add(b.textContent):sel.delete(b.textContent)};
