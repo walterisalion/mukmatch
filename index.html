@@ -99,7 +99,7 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 <nav id="tabs" class="hide"><button data-v="discover" class="on"><span>💘</span>Discover</button><button data-v="matches"><span>💬</span>Matches</button><button data-v="buzz"><span>🔥</span>Buzz</button><button data-v="events"><span>🎉</span>Events</button><button data-v="me"><span>🙂</span>You</button></nav>
 
 <script>
-const CFG={url:'https://njwnkidpkpoygzxjkdft.supabase.co',key:'sb_publishable_SMP4QdIYhAj84R3XCPBnOQ_5mNYRLTl'};
+const CFG={url:'https://njwnkidpkpoygzxjkdft.supabase.co/rest/v1/',key:'sb_publishable_SMP4QdIYhAj84R3XCPBnOQ_5mNYRLTl'};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MAK=/^[^@\s]+@(students\.)?mak\.ac\.ug$/i;
@@ -118,7 +118,9 @@ const bgOf=p=>{const u=urlMap[p.photos[0]];return u?`background-image:url("${u}"
 /* start */
 (async function init(){
 if(CFG.url.includes('YOUR-PROJECT'))return show('s-config');
-sb=supabase.createClient(CFG.url,CFG.key);
+let base;try{base=new URL(CFG.url.trim())}catch{return show('s-config')}
+if(/(^|\.)supabase\.com$/.test(base.hostname))return show('s-config');
+sb=supabase.createClient(base.origin,CFG.key.trim());
 const{data:{session}}=await sb.auth.getSession();session?boot(session.user):show('s-login')})();
 
 /* sign in */
