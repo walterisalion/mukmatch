@@ -137,7 +137,7 @@ async function auth(mode){const e=$('#em').value.trim().toLowerCase(),p=$('#pw')
 if(!/^\S+@\S+\.\S+$/.test(e))return err('#e1','Enter a valid email address.');
 if(p.length<6)return err('#e1','Password must be at least 6 characters.');
 err('#e1',mode==='up'?'Creating your account…':'Signing in…');
-const r=mode==='up'?await sb.auth.signUp({email:e,password:p}):await sb.auth.signInWithPassword({email:e,password:p});
+const r=mode==='up'?await sb.auth.signUp({email:e,password:p,options:{emailRedirectTo:location.origin+location.pathname}}):await sb.auth.signInWithPassword({email:e,password:p});
 if(r.error)return err('#e1',/not confirmed/i.test(r.error.message)?'Please click the confirmation link we emailed you, then sign in.':r.error.message);
 if(!r.data.session)return err('#e1','Almost there! We emailed you a confirmation link. Click it, then come back and sign in.');
 boot(r.data.user)}
