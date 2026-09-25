@@ -53,6 +53,10 @@ input,select,textarea{width:100%;padding:12px;border-radius:14px;border:1.5px so
 .rx{display:flex;gap:6px;margin-top:8px}.rx button{background:var(--bg);border:1.5px solid var(--line);border-radius:999px;padding:4px 10px}.rx button.on{border-color:var(--pink)}
 .ev{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
 .ev .d{background:var(--red);color:#fff;border-radius:14px;padding:8px 10px;text-align:center;font-weight:800;line-height:1.1;min-width:58px}.ev .d small{display:block;font-weight:400;font-size:.7rem}
+nav button{position:relative}
+.nbadge{position:absolute;top:2px;right:calc(50% - 26px);background:var(--pink);color:#fff;font-size:.65rem;font-weight:800;min-width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.item .unread{background:var(--pink);color:#fff;font-size:.75rem;font-weight:800;border-radius:999px;padding:2px 8px;flex:none}
+.item b.new{color:var(--red)}
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));z-index:5}
 nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px;font-size:.78rem;color:var(--mute);font-weight:600}nav button span{display:block;font-size:1.3rem}nav button.on{color:var(--red);background:var(--bg)}
 .modal{position:fixed;inset:0;background:rgba(20,5,10,.6);display:grid;place-items:center;padding:20px;z-index:10}
@@ -98,7 +102,7 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 <div id="v-me" class="vw hide"><h2>You</h2><div class="panel"><b id="mename"></b><p class="meta">Date safe: meet in public places, tell a friend, and use Report or Block any time.</p>
 <button class="btn sm" id="edit">Edit profile</button> <button class="btn ghost sm" id="out">Sign out</button> <button class="btn ghost sm" id="del">Delete my account and data</button></div></div>
 </section></div>
-<nav id="tabs" class="hide"><button data-v="discover" class="on"><span>💘</span>Discover</button><button data-v="matches"><span>💬</span>Matches</button><button data-v="buzz"><span>🔥</span>Buzz</button><button data-v="events"><span>🎉</span>Events</button><button data-v="me"><span>🙂</span>You</button></nav>
+<nav id="tabs" class="hide"><button data-v="discover" class="on"><span>💘</span>Discover</button><button data-v="matches"><span>💬</span>Matches<i id="navbadge" class="nbadge hide"></i></button><button data-v="buzz"><span>🔥</span>Buzz</button><button data-v="events"><span>🎉</span>Events</button><button data-v="me"><span>🙂</span>You</button></nav>
 
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -107,7 +111,8 @@ const COL=['CoCIS','CEDAT','CHUSS','CAES','CoNAS','CHS','CoBAMS','Law','Educatio
 const HALLS={Female:['Mary Stuart Hall','Africa Hall','Complex Hall'],Male:['Lumumba Hall','Livingstone Hall','Mitchell Hall','Nkrumah Hall','Nsibirwa Hall','University Hall']};
 const OFF=['Private hostel near campus','Off-campus: Wandegeya','Off-campus: Kikoni','Off-campus: Makerere Kivulu','At home'];
 const INT=['Afrobeats','Gospel','Football','Debate','Tech','Fashion','Movies','Gym','Poetry','Food','Travel','Gaming'];
-let sb,uid,me,pendingEmail,editing=false,tmp=[],sel=new Set(),queue=[],urlMap={},cardUrls=[],ci=0,mplist=[],cur=null,msgs=[],chan=null,busy=false,moved=0,cap=false;
+let sb,uid,me,pendingEmail,editing=false,tmp=[],sel=new Set(),queue=[],urlMap={},cardUrls=[],ci=0,mplist=[],cur=null,msgs=[],chan=null,busy=false,moved=0,cap=false,UN={};
+const BASE_TITLE=document.title;
 const err=(s,t)=>$(s).textContent=t;
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
 function modal(h,cb){const m=document.createElement('div');m.className='modal';m.innerHTML='<div class="box">'+h+'</div>';m.onclick=e=>{const x=e.target.closest('[data-x]');if(e.target===m||x){m.remove();x&&cb&&cb(x.dataset.x)}};document.body.appendChild(m)}
@@ -182,7 +187,16 @@ if(error){$('#save').disabled=false;if(fresh.length)sb.storage.from('photos').re
 const gone=(me&&me.photos||[]).filter(x=>!paths.includes(x));if(gone.length)await sb.storage.from('photos').remove(gone);me=data;editing=false;app()};
 
 /* app shell */
-async function app(){show('s-app');view('discover');$('#mename').textContent=me.name+', '+me.age;await loadQueue()}
+async function app(){show('s-app');view('discover');$('#mename').textContent=me.name+', '+me.age;await loadQueue();loadUnread();
+if(!window._unreadTimer)window._unreadTimer=setInterval(()=>{if(!document.hidden)loadUnread()},20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadUnread()})}
+/* unread message badges */
+async function loadUnread(){const{data,error}=await sb.rpc('unread_summary');if(error)return;
+UN=Object.fromEntries((data||[]).map(x=>[x.match_id,x.unread]));paintBadges()}
+function paintBadges(){const total=Object.values(UN).reduce((a,b)=>a+b,0),b=$('#navbadge');
+if(total>0){b.textContent=total>9?'9+':total;b.classList.remove('hide')}else b.classList.add('hide');
+document.title=(total>0?`(${total>9?'9+':total}) `:'')+BASE_TITLE;
+if(mplist.length)paintMatchList()}
 $('#tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;view(b.dataset.v);if(b.dataset.v==='matches')loadMatches();if(b.dataset.v==='buzz')loadBuzz();if(b.dataset.v==='events')loadEvents()};
 
 /* discover */
@@ -219,12 +233,15 @@ async function loadMatches(){const{data:ms}=await sb.from('matches').select('*')
 const ids=(ms||[]).map(m=>m.a===uid?m.b:m.a);const{data:ps}=ids.length?await sb.from('profiles').select('*').in('id',ids):{data:[]};
 await sign((ps||[]).map(p=>p.photos[0]));
 mplist=(ms||[]).map(m=>({m,p:(ps||[]).find(x=>x.id===(m.a===uid?m.b:m.a))})).filter(x=>x.p);
-$('#mlist').innerHTML=mplist.length?mplist.map((x,i)=>`<button class="item" data-i="${i}"><div class="av" style="${bgOf(x.p)}">${urlMap[x.p.photos[0]]?'':'🙂'}</div><div class="t"><b>${esc(x.p.name)}, ${x.p.age}</b><div class="meta">${esc(x.p.college)} · ${esc(x.p.hall)}</div></div></button>`).join(''):'<div class="empty"><b>No matches yet</b>Swipe right on someone who makes you smile.</div>'}
+await loadUnread();paintMatchList()}
+function paintMatchList(){$('#mlist').innerHTML=mplist.length?mplist.map((x,i)=>{const n=UN[x.m.id]||0;
+return `<button class="item" data-i="${i}"><div class="av" style="${bgOf(x.p)}">${urlMap[x.p.photos[0]]?'':'🙂'}</div><div class="t"><b class="${n?'new':''}">${esc(x.p.name)}, ${x.p.age}</b><div class="meta">${esc(x.p.college)} · ${esc(x.p.hall)}</div></div>${n?`<span class="unread">${n>9?'9+':n}</span>`:''}</button>`}).join(''):'<div class="empty"><b>No matches yet</b>Swipe right on someone who makes you smile.</div>'}
 $('#mlist').onclick=e=>{const b=e.target.closest('.item');if(b)openChat(mplist[+b.dataset.i])};
+async function markRead(matchId){await sb.from('reads').upsert({match_id:matchId,user_id:uid,last_read:new Date().toISOString()});UN[matchId]=0;paintBadges()}
 async function openChat(x){cur=x;msgs=[];view('chat');$('#cav').style.cssText=bgOf(x.p);$('#cav').textContent=urlMap[x.p.photos[0]]?'':'🙂';$('#cnm').textContent=x.p.name;$('#cmt').textContent=x.p.college+' · '+x.p.hall;paintMsgs();
-const{data}=await sb.from('messages').select('*').eq('match_id',x.m.id).order('created_at').limit(200);msgs=data||[];paintMsgs();
+const{data}=await sb.from('messages').select('*').eq('match_id',x.m.id).order('created_at').limit(200);msgs=data||[];paintMsgs();markRead(x.m.id);
 if(chan)sb.removeChannel(chan);
-chan=sb.channel('chat-'+x.m.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'match_id=eq.'+x.m.id},pl=>addMsg(pl.new)).subscribe()}
+chan=sb.channel('chat-'+x.m.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'match_id=eq.'+x.m.id},pl=>{addMsg(pl.new);if(pl.new.sender!==uid&&!$('#v-chat').classList.contains('hide'))markRead(x.m.id)}).subscribe()}
 function addMsg(m){if(msgs.some(x=>x.id===m.id))return;msgs.push(m);paintMsgs()}
 function paintMsgs(){$('#msgs').innerHTML=msgs.length?msgs.map(m=>`<div class="m ${m.sender===uid?'me':''}">${esc(m.body)}</div>`).join(''):'<div class="empty">No messages yet. Say hi 👋</div>';window.scrollTo(0,document.body.scrollHeight)}
 async function send(){const t=$('#ci').value.trim();if(!t||!cur)return;$('#ci').value='';const{data,error}=await sb.from('messages').insert({match_id:cur.m.id,sender:uid,body:t}).select().single();if(error)return toast('Message not sent');addMsg(data)}
