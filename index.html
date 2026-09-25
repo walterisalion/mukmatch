@@ -68,6 +68,7 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 <section id="s-login" class="scr hide">
 <h1>Find your person on the Hill.</h1><p class="meta" id="lead">Meet students across campus. Create an account with any email address.</p>
 <div class="panel" id="st1"><label for="em">Email</label><input id="em" type="email" placeholder="you@gmail.com" autocomplete="email"><div id="pwbox"><label for="pw">Password (6+ characters)</label><input id="pw" type="password" autocomplete="current-password"></div><div class="err" id="e1"></div>
+<label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;margin:14px 0"><input type="checkbox" id="agree" style="width:auto;margin-top:3px"> I'm 18+ and agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:var(--red)">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--red)">Privacy Policy</a>.</label>
 <button class="btn gold" id="send" style="width:100%">Create account</button><button class="btn ghost" id="signin" style="width:100%;margin-top:8px">Sign in</button><button type="button" id="forgot" style="background:none;color:var(--mute);text-decoration:underline;margin-top:12px;padding:4px">Forgot password?</button></div>
 <div class="panel hide" id="st2"><p>We emailed a code to <b id="cem"></b>. Enter it below to confirm your email.</p><label for="code">Code</label><input id="code" inputmode="numeric" maxlength="10" autocomplete="one-time-code"><div class="err" id="e2"></div>
 <button class="btn" id="ver" style="width:100%">Confirm</button><button type="button" id="resend" style="background:none;color:var(--mute);text-decoration:underline;margin-top:12px;padding:4px">Send a new code</button></div>
@@ -128,7 +129,7 @@ if(rec&&session)return show('s-reset');
 session?boot(session.user):show('s-login')})();
 
 /* sign in */
-$('#send').onclick=()=>auth('up');
+$('#send').onclick=()=>{if(!$('#agree').checked)return err('#e1',"Please confirm you're 18+ and agree to the Terms and Privacy Policy.");auth('up')};
 async function boot(u){uid=u.id;const{data}=await sb.from('profiles').select('*').eq('id',uid).maybeSingle();
 if(!data){$('#fc').innerHTML=COL.map(c=>`<option>${c}</option>`).join('');setHalls();
 $('#fi').innerHTML=INT.map(i=>`<button type="button" class="chip">${i}</button>`).join('');return show('s-setup')}
