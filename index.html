@@ -3,11 +3,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MukMatch</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<script src="supabase.js"></script>
 <script src="config.js"></script>
 <style>
 :root{--bg:#FFF0F3;--card:#fff;--ink:#2A0F18;--mute:#7d5a64;--red:#8E1B34;--gold:#F6B92B;--pink:#FF4F8B;--line:#f1cdd6}
-@media(prefers-color-scheme:dark){:root{--bg:#1a0b11;--card:#2a141c;--ink:#ffeef2;--mute:#c79aa6;--line:#4a2431}}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a0b11;--card:#2a141c;--ink:#ffeef2;--mute:#c79aa6;--line:#4a2431}}
+:root[data-theme="dark"]{--bg:#1a0b11;--card:#2a141c;--ink:#ffeef2;--mute:#c79aa6;--line:#4a2431}
+:root[data-theme="light"]{--bg:#FFF0F3;--card:#fff;--ink:#2A0F18;--mute:#7d5a64;--line:#f1cdd6}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,sans-serif;line-height:1.45}
 button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer;border:0}
@@ -36,6 +38,7 @@ input,select,textarea{width:100%;padding:12px;border-radius:14px;border:1.5px so
 .pcard[data-d="like"]::after{opacity:1;color:#12a150}.pcard[data-d="pass"]::after{opacity:1;color:#d6224f}
 .pic{height:300px;display:grid;place-items:center;font-size:7rem;position:relative;background:linear-gradient(160deg,#ff7eb3,#8E1B34) center/cover;cursor:pointer}
 .pic .nm{position:absolute;left:16px;bottom:12px;color:#fff;font-size:1.7rem;font-weight:800;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+.superflag{position:absolute;top:10px;left:12px;background:var(--gold);color:#2A0F18;font-weight:800;font-size:.8rem;padding:5px 10px;border-radius:999px}
 .dots{position:absolute;top:10px;left:12px;right:12px;display:flex;gap:4px}.dots i{flex:1;height:4px;border-radius:4px;background:rgba(255,255,255,.45)}.dots i.on{background:#fff}
 .pbody{padding:14px 16px 16px}
 .quote{margin:10px 0;padding:10px 12px;background:var(--bg);border-left:4px solid var(--pink);border-radius:8px;font-weight:600}
@@ -65,8 +68,11 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head>
 <body><div class="wrap">
-<div class="logo">Muk<b>Match</b></div>
+<header style="display:flex;justify-content:space-between;align-items:center"><div class="logo">Muk<b>Match</b></div><button id="themeBtn" aria-label="Toggle light or dark mode" style="background:var(--card);border:1.5px solid var(--line);border-radius:50%;width:40px;height:40px;font-size:1.1rem">🌓</button></header>
 
+<section id="s-fail" class="scr hide"><h2>Something went wrong</h2><div class="panel"><p id="failmsg"></p>
+<button class="btn" id="reload" style="width:100%">Try again</button>
+<button type="button" id="resetsess" style="background:none;color:var(--mute);text-decoration:underline;margin-top:12px;padding:4px">Still stuck? Sign out and start fresh</button></div></section>
 <section id="s-config" class="scr hide"><h1>One step left</h1><div class="panel">Create a file named <code>config.js</code> next to <code>index.html</code> and paste your Supabase Project URL and anon key into it. Steps are in README.md.</div></section>
 
 <section id="s-login" class="scr hide">
@@ -91,7 +97,11 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 <div class="err" id="e3"></div><button class="btn" id="save" style="width:100%">Save and start swiping</button><button type="button" class="btn ghost sm hide" id="cancel" style="width:100%;margin-top:8px">Cancel</button></div></section>
 
 <section id="s-app" class="scr hide">
-<div id="v-discover" class="vw"><div id="deck"></div><div class="acts" id="acts"><button data-a="pass" aria-label="Pass">✕</button><button class="s" data-a="super" aria-label="Super like">⭐</button><button class="l" data-a="like" aria-label="Like">💗</button></div><p class="meta" style="text-align:center">Drag the card or tap a button. Tap the sides of a photo to see more.</p></div>
+<div id="v-discover" class="vw"><div id="deck"></div><div class="acts" id="acts">
+<div style="text-align:center"><button data-a="pass" aria-label="Pass">✕</button><div class="meta" style="margin-top:4px">Pass</div></div>
+<div style="text-align:center"><button class="s" data-a="super" aria-label="Super like">⭐</button><div class="meta" style="margin-top:4px;max-width:70px">Super&nbsp;like<br><span style="font-size:.7rem">they'll see it</span></div></div>
+<div style="text-align:center"><button class="l" data-a="like" aria-label="Like">💗</button><div class="meta" style="margin-top:4px">Like</div></div>
+</div><p class="meta" style="text-align:center">Drag the card or tap a button. Tap the sides of a photo to see more.</p></div>
 <div id="v-matches" class="vw hide"><h2>Your matches</h2><div id="mlist"></div></div>
 <div id="v-chat" class="vw hide"><button class="btn ghost sm" id="back">← Matches</button>
 <div class="item" style="margin-top:12px"><div class="av" id="cav"></div><div class="t"><b id="cnm"></b><div class="meta" id="cmt"></div></div><div class="safe"><button id="crep">Report</button><button id="cblk">Block</button></div></div>
@@ -122,16 +132,28 @@ async function sign(paths){const need=paths.filter(x=>x&&!urlMap[x]);if(!need.le
 const bgOf=p=>{const u=urlMap[p.photos[0]];return u?`background-image:url("${u}")`:''};
 
 /* start */
+(function initTheme(){try{const saved=localStorage.getItem('mukmatch-theme');if(saved)document.documentElement.dataset.theme=saved}catch{}})();
+$('#themeBtn').onclick=()=>{const cur=document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+const next=cur==='dark'?'light':'dark';document.documentElement.dataset.theme=next;try{localStorage.setItem('mukmatch-theme',next)}catch{}};
+function fail(msg){$('#failmsg').textContent=msg;show('s-fail')}
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+$('#reload').onclick=()=>location.reload();
+$('#resetsess').onclick=()=>{try{Object.keys(localStorage).filter(k=>/^sb-.*-auth-token/.test(k)).forEach(k=>localStorage.removeItem(k))}catch{}location.reload()};
 (async function init(){
+try{
 if(typeof CFG==='undefined'||CFG.url.includes('YOUR-PROJECT'))return show('s-config');
 let base;try{base=new URL(CFG.url.trim())}catch{return show('s-config')}
 if(/(^|\.)supabase\.com$/.test(base.hostname))return show('s-config');
+if(typeof supabase==='undefined')return fail('A required file failed to load. Check your internet connection and try again.');
 sb=supabase.createClient(base.origin,CFG.key.trim());
 if(/error_code=|error_description=/.test(location.hash)){show('s-login');err('#e1','That email link has expired or was already used. Please request a new one.');history.replaceState(null,'',location.pathname);return}
 const rec=/type=recovery/.test(location.hash);
-const{data:{session}}=await sb.auth.getSession();
+const{data:{session}}=await Promise.race([sb.auth.getSession(),new Promise((_,no)=>setTimeout(()=>no(new Error('Sign-in check timed out')),10000))]);
 if(rec&&session)return show('s-reset');
-session?boot(session.user):show('s-login')})();
+if(session)await boot(session.user);else show('s-login')
+}catch(e){console.error('MukMatch startup error:',e);
+if(!document.querySelector('.scr:not(.hide)'))fail('The app hit a problem while starting ('+(e&&e.message?e.message:'unknown error')+'). Try again, or sign out and start fresh.')}
+})();
 
 /* sign in */
 $('#send').onclick=()=>{if(!$('#agree').checked)return err('#e1',"Please confirm you're 18+ and agree to the Terms and Privacy Policy.");auth('up')};
@@ -200,13 +222,16 @@ if(mplist.length)paintMatchList()}
 $('#tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;view(b.dataset.v);if(b.dataset.v==='matches')loadMatches();if(b.dataset.v==='buzz')loadBuzz();if(b.dataset.v==='events')loadEvents()};
 
 /* discover */
+let LIKEDME=new Set();
 async function loadQueue(){const{data:seen}=await sb.from('likes').select('to_id');const s=new Set((seen||[]).map(x=>x.to_id));
 const{data}=await sb.from('profiles').select('*').eq('gender',me.want).eq('want',me.gender).neq('id',uid).limit(100);
-queue=(data||[]).filter(p=>!s.has(p.id));draw()}
+queue=(data||[]).filter(p=>!s.has(p.id));
+const{data:lm}=await sb.rpc('liked_me');LIKEDME=new Set((lm||[]).map(x=>x.from_id));
+draw()}
 async function draw(){const p=queue[0],d=$('#deck');$('#acts').classList.toggle('hide',!p);
 if(!p){d.innerHTML='<div class="empty"><b>You have seen everyone for now 👀</b>Check Campus Buzz, then come back as more students join.</div>';return}
 await sign(p.photos);if(queue[0]!==p)return;cardUrls=p.photos.map(x=>urlMap[x]).filter(Boolean);ci=0;
-d.innerHTML=`<div class="pcard" id="pc"><div class="pic" id="pic" style="${bgOf(p)}">${cardUrls.length?'':'🙂'}${cardUrls.length>1?`<div class="dots">${cardUrls.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}<div class="nm">${esc(p.name)}, ${p.age}</div></div>
+d.innerHTML=`<div class="pcard" id="pc"><div class="pic" id="pic" style="${bgOf(p)}">${cardUrls.length?'':'🙂'}${cardUrls.length>1?`<div class="dots">${cardUrls.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}${LIKEDME.has(p.id)?'<div class="superflag">⭐ Super liked you</div>':''}<div class="nm">${esc(p.name)}, ${p.age}</div></div>
 <div class="pbody"><div class="meta">${esc(p.college)} · Year ${p.year} · ${esc(p.hall)}</div>${p.prompt?`<div class="quote">“${esc(p.prompt)}”</div>`:''}<div class="chips">${p.interests.map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
 <div class="safe"><button id="rep">Report</button><button id="blk">Block</button></div></div></div>`;
 $('#rep').onclick=()=>report(p);$('#blk').onclick=async()=>{await block(p);queue.shift();draw()};drag($('#pc'))}
