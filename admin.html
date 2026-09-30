@@ -7,8 +7,10 @@
 <script src="supabase.js"></script>
 <script src="config.js"></script>
 <style>
-:root{--bg:#FFF0F3;--card:#fff;--ink:#2A0F18;--mute:#7d5a64;--red:#8E1B34;--gold:#F6B92B;--pink:#FF4F8B;--line:#f1cdd6}
-@media(prefers-color-scheme:dark){:root{--bg:#1a0b11;--card:#2a141c;--ink:#ffeef2;--mute:#c79aa6;--line:#4a2431}}
+:root{--bg:#FFF0F3;--card:#fff;--ink:#2A0F18;--mute:#7d5a64;--red:#8E1B34;--gold:#F6B92B;--pink:#FF4F8B;--pink-deep:#C62E6B;--line:#f1cdd6;--shadow:0 10px 24px rgba(142,27,52,.10)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a0b11;--card:#331a24;--ink:#ffeef2;--mute:#c79aa6;--line:#4a2431}}
+:root[data-theme="dark"]{--bg:#1a0b11;--card:#331a24;--ink:#ffeef2;--mute:#c79aa6;--line:#4a2431}
+:root[data-theme="light"]{--bg:#FFF0F3;--card:#fff;--ink:#2A0F18;--mute:#7d5a64;--line:#f1cdd6}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,sans-serif;line-height:1.45}
 button,input{font:inherit;color:inherit}button{cursor:pointer;border:0}
@@ -19,7 +21,7 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 .logo{font-weight:800;font-size:1.5rem;letter-spacing:-.03em;color:var(--red)}.logo b{color:var(--pink)}.logo small{font-size:.8rem;color:var(--mute);font-weight:600}
 h2{font-size:1.5rem;letter-spacing:-.03em;margin:.4em 0}
 .btn{background:var(--red);color:#fff;padding:12px 20px;border-radius:999px;font-weight:800}.btn.ghost{background:none;border:2px solid var(--line);color:var(--ink)}.btn.sm{padding:8px 14px;font-size:.9rem}.btn.danger{background:#b3122e}.btn:disabled{opacity:.4;cursor:default}
-.panel,.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px}
+.panel,.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
 .meta{color:var(--mute);font-size:.9rem}
 label{display:block;font-weight:600;font-size:.9rem;margin:12px 0 4px}
 input{width:100%;padding:12px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg)}
