@@ -42,33 +42,82 @@ See [Terms](terms.html) and [Privacy Policy](privacy.html).
 - A Supabase project
 - A local static web server for development (recommended)
 
-### Configure Supabase
+### 1) Configure local `config.js` safely
 
-The app reads its Supabase settings from `config.js`, which must be next to `index.html` and `admin.html`. The current code expects the `CFG` object shown below:
+The app reads runtime config from `config.js` (next to `index.html` and `admin.html`).
 
-```js
-const CFG = {
-  url: "https://your-project-ref.supabase.co",
-  key: "your-anon-or-publishable-key"
-};
+1. Copy the template:
+
+   ```bash
+   cp config.example.js config.js
+   ```
+
+2. Edit `config.js` with your project values:
+
+   ```js
+   const CFG = {
+     url: "https://your-project-ref.supabase.co",
+     key: "your-anon-or-publishable-key"
+   };
+   ```
+
+Use only the **anon/publishable** key from Supabase. Never use `service_role` or any secret key in browser code.
+
+> `config.js` is now listed in `.gitignore` for safer local usage. The repository still keeps the existing tracked `config.js` for current deployment compatibility; replace values locally for your own environment.
+
+### 2) Set up Supabase database + storage
+
+Run the SQL in [`migrations/001_supabase_schema.sql`](migrations/001_supabase_schema.sql) in Supabase SQL Editor.
+
+This migration creates the database objects inferred from `index.html` and `admin.html`, including:
+
+- Tables: `profiles`, `likes`, `matches`, `messages`, `reads`, `reports`, `blocks`, `posts`, `reactions`, `events`, `rsvps`, `admins`, `mod_log`
+- Views: `buzz_feed`, `event_counts`
+- Functions/RPCs: `unread_summary`, `delete_my_account`, `admin_remove_profile`
+- Trigger: auto-create matches after mutual likes
+- Private storage bucket: `photos`
+- RLS and storage policies for student and organiser/admin flows
+
+#### Manual security steps you still need
+
+Some behavior cannot be fully and safely inferred from frontend code alone:
+
+1. **Ban durability after account removal**  
+   `admin_remove_profile` deletes the target auth user and app data. If you need permanent email/device-level bans, add a separate Supabase auth hook or external moderation workflow.
+
+2. **Auth URL configuration**  
+   In Supabase Auth → URL Configuration, add:
+   - Site URL (e.g. your GitHub Pages URL)
+   - Redirect URL for password reset/email links (same origin/path used by the app)
+
+3. **SMTP/email provider setup**  
+   Configure Supabase Auth email delivery for sign-up verification and password reset.
+
+4. **Realtime**  
+   The migration attempts to add `public.messages` to `supabase_realtime`. If your project differs, enable Realtime for `messages` manually.
+
+### 3) Create organiser/admin access
+
+Add organiser users (after they exist in `auth.users`) by inserting their UUID into `public.admins`:
+
+```sql
+insert into public.admins (user_id) values ('<auth-user-uuid>');
 ```
 
-Use the project URL and the **anon public** or publishable key from Supabase Project Settings → API. Never put a `service_role` or secret key in this file or in any browser-delivered file.
+The admin dashboard (`admin.html`) relies on this table and RLS policies for access gating.
 
-> `config.js` contains a public client key and is not a substitute for database security. Configure Supabase Row Level Security (RLS), storage policies, and organiser permissions before using the app with real users.
+### 4) Quick RLS/storage verification
 
-### Set up the database
+After migration:
 
-This repository does not currently include a `schema.sql` or a documented database migration. Before running the app, create the Supabase tables, functions, storage bucket, and RLS policies required by the code in `index.html` and `admin.html`. In particular, the app uses:
-
-- Supabase Auth for email sign-up, sign-in, confirmation, and password reset
-- A `profiles` table with profile details and photo paths
-- A private `photos` storage bucket for profile images
-- Tables and policies for likes, passes, matches, messages, reports, blocks, Campus Buzz posts/reactions, events, RSVPs, and moderation logs
-- The `unread_summary` database function for message badges
-- Organiser access controls used by the admin dashboard
-
-If you deploy the app to a different domain, also add that domain to Supabase Authentication → URL Configuration, including the password-reset redirect URL.
+1. Confirm RLS is enabled on all created tables.
+2. Validate access with two different test users:
+   - user A cannot edit user B profile/messages/reads
+   - non-admin cannot read reports or moderation log
+   - admin can read reports/mod log and manage events
+3. Validate storage:
+   - each user can upload/delete photos only in their own `<uid>/...` folder
+   - authenticated users can resolve signed photo URLs needed by discover/match screens
 
 ### Run locally
 
@@ -79,7 +128,7 @@ If you deploy the app to a different domain, also add that domain to Supabase Au
    cd mukmatch
    ```
 
-2. Configure Supabase as described above.
+2. Configure Supabase and `config.js` as described above.
 3. Serve the directory with a local HTTP server. For example, with Python:
 
    ```bash
@@ -92,13 +141,39 @@ Opening `index.html` directly with a `file://` URL may cause authentication, mod
 
 ## Deployment
 
-The site is a static frontend and can be hosted on GitHub Pages or another static hosting provider:
+The site is static HTML/CSS/JS and works on GitHub Pages or any static host:
 
 1. Push the repository to GitHub.
 2. Enable GitHub Pages for the repository branch and folder containing the site.
-3. Add the deployed origin to Supabase Auth's allowed redirect URLs.
-4. Confirm that the production Supabase RLS and storage policies prevent unauthorised reads and writes.
-5. Test sign-up, email confirmation, password reset, photo upload, messaging, reporting, account deletion, and organiser access in production.
+3. Deploy with your own `config.js` (URL + anon/publishable key only).
+4. Add your deployed origin to Supabase Auth redirect URLs.
+5. Confirm production RLS/storage policy behavior before inviting users.
+
+## Manual verification checklist
+
+- [ ] Sign-up with email + password
+- [ ] Email confirmation code and resend flow
+- [ ] Sign-in and password reset flow
+- [ ] Profile creation/edit (name, age, college, interests, prompt, photos)
+- [ ] Discover like/pass interactions
+- [ ] Mutual-like match appears
+- [ ] Chat send/receive and unread badge updates
+- [ ] Campus Buzz posting and reactions
+- [ ] Event list and RSVP toggling
+- [ ] Report + Block from discover/chat flows
+- [ ] Account deletion removes profile data and signs user out
+- [ ] Organiser dashboard access for admins only
+- [ ] Report dismissal and remove/ban flow in admin dashboard
+
+## Screenshots / demo media (placeholder)
+
+Add screenshots or GIFs here when available (do not use fabricated media):
+
+- Discovery screen
+- Matches/chat
+- Campus Buzz
+- Events
+- Admin dashboard
 
 ## How it was built
 
