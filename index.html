@@ -43,7 +43,7 @@ input,select,textarea{width:100%;padding:12px;border-radius:14px;border:1.5px so
 .quote{margin:10px 0;padding:10px 12px;background:var(--bg);border-left:4px solid var(--pink);border-radius:8px;font-weight:600}
 .acts{display:flex;justify-content:center;gap:18px;margin:18px 0 6px}
 .acts button{width:64px;height:64px;border-radius:50%;font-size:1.7rem;background:var(--card);border:2px solid var(--line)}.acts .l{background:var(--pink)}
-.safe button{background:none;color:var(--mute);font-size:.8rem;text-decoration:underline;padding:2px 4px}
+.safe button{background:none;color:var(--mute);font-size:.88rem;text-decoration:underline;padding:8px 10px;min-height:40px}
 .empty{text-align:center;padding:36px 16px;color:var(--mute)}.empty b{display:block;font-size:1.25rem;color:var(--ink)}
 .item{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:10px 12px;margin-bottom:10px;width:100%;text-align:left;box-shadow:var(--shadow)}
 .av{width:52px;height:52px;border-radius:50%;background:linear-gradient(160deg,#ff7eb3,#8E1B34) center/cover;display:grid;place-items:center;font-size:1.6rem;flex:none}
@@ -59,10 +59,18 @@ nav button{position:relative}
 .nbadge{position:absolute;top:2px;right:calc(50% - 26px);background:var(--pink-deep);color:#fff;font-size:.65rem;font-weight:800;min-width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 3px}
 .item .unread{background:var(--pink-deep);color:#fff;font-size:.75rem;font-weight:800;border-radius:999px;padding:2px 8px;flex:none}
 .item b.new{color:var(--red)}
+.help{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:10px 0;color:var(--mute);font-size:.88rem}
+.help b{color:var(--ink)}
+.steps{display:flex;gap:6px;margin:0 0 10px}
+.steps i{flex:1;height:6px;border-radius:999px;background:var(--line)}
+.steps i.on{background:var(--pink)}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));z-index:5}
 nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px;font-size:.78rem;color:var(--mute);font-weight:600}nav button span{display:block;font-size:1.3rem}nav button.on{color:var(--red);background:var(--bg)}
 .modal{position:fixed;inset:0;background:rgba(20,5,10,.6);display:grid;place-items:center;padding:20px;z-index:10}
 .modal .box{background:var(--card);border-radius:28px;padding:24px;max-width:400px;text-align:center}
+.modal textarea{min-height:90px;resize:vertical}
+.modal .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;z-index:12;font-weight:600}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head>
@@ -85,6 +93,8 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 
 <section id="s-reset" class="scr hide"><h2>Choose a new password</h2><div class="panel"><label for="np">New password (6+ characters)</label><input id="np" type="password" autocomplete="new-password"><div class="err" id="e4"></div><button class="btn" id="setpw" style="width:100%">Save new password</button></div></section>
 <section id="s-setup" class="scr hide"><h2 id="stitle">Build your profile</h2><div class="panel">
+<div class="steps" id="profileSteps" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+<p class="meta" id="profileProgress">Step 1 of 3 · Basic details</p>
 <label for="fn">First name</label><input id="fn" maxlength="20">
 <div class="row"><div><label for="fg">I am</label><select id="fg"><option>Female</option><option>Male</option></select></div><div><label for="fw">Looking for</label><select id="fw"><option>Male</option><option>Female</option></select></div></div>
 <div class="row"><div><label for="fa">Age (18+)</label><input id="fa" type="number" min="18" max="40" value="21"></div><div><label for="fy">Year</label><select id="fy"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div></div>
@@ -93,24 +103,25 @@ nav button{flex:1;max-width:110px;background:none;padding:6px;border-radius:14px
 <label for="fq">My ideal Freedom Square date is…</label><textarea id="fq" rows="2" maxlength="90"></textarea>
 <label>Photos (1 to 4)</label><button type="button" class="btn ghost sm" id="pick">Add photos</button><div class="thumbs" id="th"></div>
 <input type="file" id="fph" accept="image/jpeg,image/png,image/webp" multiple class="hide">
-<div class="err" id="e3"></div><button class="btn" id="save" style="width:100%">Save and start swiping</button><button type="button" class="btn ghost sm hide" id="cancel" style="width:100%;margin-top:8px">Cancel</button></div></section>
+<div class="err" id="e3" role="alert" aria-live="polite"></div><button class="btn" id="save" style="width:100%">Save and start swiping</button><button type="button" class="btn ghost sm hide" id="cancel" style="width:100%;margin-top:8px">Cancel</button></div></section>
 
 <section id="s-app" class="scr hide">
 <div id="v-discover" class="vw"><div id="deck"></div><div class="acts" id="acts">
 <div style="text-align:center"><button data-a="pass" aria-label="Pass">✕</button><div class="meta" style="margin-top:4px">Pass</div></div>
 <div style="text-align:center"><button class="l" data-a="like" aria-label="Like">💗</button><div class="meta" style="margin-top:4px">Like</div></div>
-</div><p class="meta" style="text-align:center">Drag the card or tap a button. Tap the sides of a photo to see more.</p></div>
+</div><p class="meta" style="text-align:center">Drag the card or tap a button. Tap the sides of a photo to see more.</p><button class="btn ghost sm" id="openGuide" style="width:100%">How MukMatch works</button></div>
 <div id="v-matches" class="vw hide"><h2>Your matches</h2><div id="mlist"></div></div>
 <div id="v-chat" class="vw hide"><button class="btn ghost sm" id="back">← Matches</button>
 <div class="item" style="margin-top:12px"><div class="av" id="cav"></div><div class="t"><b id="cnm"></b><div class="meta" id="cmt"></div></div><div class="safe"><button id="crep">Report</button><button id="cblk">Block</button></div></div>
-<div class="msgs" id="msgs"></div><div class="send"><input id="ci" placeholder="Say something kind…" maxlength="500"><button class="btn sm" id="cs">Send</button></div></div>
+<div class="help"><b>Safety tip:</b> Before meeting, pick a public place, tell a friend, and trust your instincts.</div>
+<div class="msgs" id="msgs"></div><div class="send"><input id="ci" placeholder="Say something kind…" maxlength="500" aria-label="Type your message"><button class="btn sm" id="cs">Send</button></div><p class="meta" id="chatStatus" aria-live="polite"></p></div>
 <div id="v-buzz" class="vw hide"><h2>Campus Buzz</h2><div class="panel"><textarea id="bt" rows="2" maxlength="200" placeholder="Confession, study buddy request or plan…"></textarea>
 <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="ba" style="width:auto"> Post anonymously</label><button class="btn sm" id="bp" style="margin-top:8px">Post</button></div><div id="blist"></div></div>
-<div id="v-events" class="vw hide"><h2>Date ideas and events</h2><div id="elist"></div></div>
+<div id="v-events" class="vw hide"><h2>Date ideas and events</h2><p class="meta">RSVP to plan safer first meetups in public spaces.</p><div id="elist"></div></div>
 <div id="v-me" class="vw hide"><h2>You</h2><div class="panel"><b id="mename"></b><p class="meta">Date safe: meet in public places, tell a friend, and use Report or Block any time.</p>
 <button class="btn sm" id="edit">Edit profile</button> <button class="btn ghost sm" id="out">Sign out</button> <button class="btn ghost sm" id="del">Delete my account and data</button></div></div>
 </section></div>
-<nav id="tabs" class="hide"><button data-v="discover" class="on"><span>💘</span>Discover</button><button data-v="matches"><span>💬</span>Matches<i id="navbadge" class="nbadge hide"></i></button><button data-v="buzz"><span>🔥</span>Buzz</button><button data-v="events"><span>🎉</span>Events</button><button data-v="me"><span>🙂</span>You</button></nav>
+<nav id="tabs" class="hide"><button data-v="discover" class="on" aria-label="Discover people" title="Discover people"><span>💘</span>Discover</button><button data-v="matches" aria-label="Matches and chat" title="Matches and chat"><span>💬</span>Matches<i id="navbadge" class="nbadge hide"></i></button><button data-v="buzz" aria-label="Campus buzz" title="Campus buzz"><span>🔥</span>Buzz</button><button data-v="events" aria-label="Date ideas and events" title="Date ideas and events"><span>🎉</span>Events</button><button data-v="me" aria-label="Your profile and account" title="Your profile and account"><span>🙂</span>You</button></nav>
 
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -119,11 +130,20 @@ const COL=['CoCIS','CEDAT','CHUSS','CAES','CoNAS','CHS','CoBAMS','Law','Educatio
 const HALLS={Female:['Mary Stuart Hall','Africa Hall','Complex Hall'],Male:['Lumumba Hall','Livingstone Hall','Mitchell Hall','Nkrumah Hall','Nsibirwa Hall','University Hall']};
 const OFF=['Private hostel near campus','Off-campus: Wandegeya','Off-campus: Kikoni','Off-campus: Makerere Kivulu','At home'];
 const INT=['Afrobeats','Gospel','Football','Debate','Tech','Fashion','Movies','Gym','Poetry','Food','Travel','Gaming'];
-let sb,uid,me,pendingEmail,editing=false,tmp=[],sel=new Set(),queue=[],urlMap={},cardUrls=[],ci=0,mplist=[],cur=null,msgs=[],chan=null,busy=false,moved=0,cap=false,UN={};
+let sb,uid,me,pendingEmail,editing=false,tmp=[],sel=new Set(),queue=[],urlMap={},cardUrls=[],ci=0,mplist=[],cur=null,msgs=[],chan=null,busy=false,moved=0,cap=false,UN={},sending=false;
 const BASE_TITLE=document.title;
 const err=(s,t)=>$(s).textContent=t;
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
-function modal(h,cb){const m=document.createElement('div');m.className='modal';m.innerHTML='<div class="box">'+h+'</div>';m.onclick=e=>{const x=e.target.closest('[data-x]');if(e.target===m||x){m.remove();x&&cb&&cb(x.dataset.x)}};document.body.appendChild(m)}
+function modal(h,cb){const m=document.createElement('div');m.className='modal';m.innerHTML='<div class="box">'+h+'</div>';m.onclick=e=>{const x=e.target.closest('[data-x]');if(e.target===m||x){const a=x&&x.dataset.x;if(x&&cb)cb(a,m);m.remove()}};document.body.appendChild(m)}
+function askConfirm({title,message,ok='Continue',cancel='Cancel',danger=false}){return new Promise(done=>{modal(`<h2>${esc(title)}</h2><p>${esc(message)}</p><div class="actions"><button class="btn ${danger?'danger':'gold'}" data-x="ok">${esc(ok)}</button><button class="btn ghost sm" data-x="cancel">${esc(cancel)}</button></div>`,x=>done(x==='ok'))})}
+function askInput({title,message,placeholder='',ok='Continue',cancel='Cancel'}){return new Promise(done=>{const id='ask-'+Math.random().toString(36).slice(2,8);modal(`<h2>${esc(title)}</h2><p>${esc(message)}</p><textarea id="${id}" maxlength="300" placeholder="${esc(placeholder)}"></textarea><div class="actions"><button class="btn gold" data-x="ok">${esc(ok)}</button><button class="btn ghost sm" data-x="cancel">${esc(cancel)}</button></div>`,(x,m)=>{if(x!=='ok')return done(null);done((m.querySelector('#'+id)?.value||'').trim())});setTimeout(()=>document.getElementById(id)?.focus(),0)})}
+function setProfileStep(step,label){$('#profileProgress').textContent=`Step ${step} of 3 · ${label}`;$$('#profileSteps i').forEach((dot,i)=>dot.classList.toggle('on',i<step))}
+function updateProfileProgress(){const done=[$('#fn').value.trim(),$('#fa').value.trim(),tmp.length].filter(Boolean).length;
+if(done===0)return setProfileStep(1,'Basic details');
+if(done===1)return setProfileStep(2,'Add your vibe');
+setProfileStep(3,'Photos and finish')}
+function showGuide(force=false){if(!force&&localStorage.getItem('mukmatch-onboarding-seen'))return;
+modal('<div style="font-size:2.6rem">👋</div><h2>Welcome to MukMatch</h2><p><b>Discover:</b> Swipe right to like, left to pass.</p><p><b>Safety:</b> Report or block at any time from cards and chats.</p><p><b>Matches:</b> Start with a kind first message.</p><p><b>Events:</b> Use campus events for safer first meetups.</p><div class="actions"><button class="btn gold" data-x="ok">Got it</button></div>',()=>{try{localStorage.setItem('mukmatch-onboarding-seen','1')}catch{}})}
 function show(id){$$('.scr').forEach(s=>s.classList.add('hide'));$('#'+id).classList.remove('hide');$('#tabs').classList.toggle('hide',id!=='s-app')}
 function view(v){$$('.vw').forEach(s=>s.classList.add('hide'));$('#v-'+v).classList.remove('hide');$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===(v==='chat'?'matches':v)));scrollTo(0,0)}
 async function sign(paths){const need=paths.filter(x=>x&&!urlMap[x]);if(!need.length)return;const{data}=await sb.storage.from('photos').createSignedUrls(need,3600);(data||[]).forEach(d=>{if(d.signedUrl)urlMap[d.path]=d.signedUrl})}
@@ -157,7 +177,7 @@ if(!document.querySelector('.scr:not(.hide)'))fail('The app hit a problem while 
 $('#send').onclick=()=>{if(!$('#agree').checked)return err('#e1',"Please confirm you're 18+ and agree to the Terms and Privacy Policy.");auth('up')};
 async function boot(u){uid=u.id;const{data}=await sb.from('profiles').select('*').eq('id',uid).maybeSingle();
 if(!data){$('#fc').innerHTML=COL.map(c=>`<option>${c}</option>`).join('');setHalls();
-$('#fi').innerHTML=INT.map(i=>`<button type="button" class="chip">${i}</button>`).join('');return show('s-setup')}
+$('#fi').innerHTML=INT.map(i=>`<button type="button" class="chip">${i}</button>`).join('');updateProfileProgress();return show('s-setup')}
 me=data;app()}
 
 /* sign up and sign in: email and password, any email address */
@@ -189,13 +209,14 @@ history.replaceState(null,'',location.pathname);toast('Password updated');boot(d
 function setHalls(){const g=$('#fg').value,keep=$('#fh').value,l=[...HALLS[g],...OFF];$('#fh').innerHTML=l.map(c=>`<option>${c}</option>`).join('');if(l.includes(keep))$('#fh').value=keep}
 $('#fg').onchange=setHalls;
 $('#fi').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;b.classList.toggle('on');b.classList.contains('on')?sel.add(b.textContent):sel.delete(b.textContent)};
+['#fn','#fa','#fq'].forEach(id=>$(id).addEventListener('input',updateProfileProgress));
 function square(f){return new Promise((ok,no)=>{const i=new Image(),u=URL.createObjectURL(f);i.onerror=no;i.onload=()=>{const S=800,m=Math.min(i.width,i.height),c=document.createElement('canvas');c.width=c.height=S;
 c.getContext('2d').drawImage(i,(i.width-m)/2,(i.height-m)/2,m,m,0,0,S,S);URL.revokeObjectURL(u);c.toBlob(b=>b?ok(b):no(),'image/jpeg',.82)};i.src=u})}
 function paintTh(){$('#th').innerHTML=tmp.map((it,i)=>`<div class="tb" style="background-image:url(${it.path?urlMap[it.path]:URL.createObjectURL(it.blob)})"><button type="button" data-i="${i}" aria-label="Remove photo">×</button></div>`).join('')}
 $('#pick').onclick=()=>$('#fph').click();
 $('#fph').onchange=async e=>{const fs=[...e.target.files];e.target.value='';for(const f of fs){if(tmp.length>=4){toast('Up to 4 photos');break}
-if(!/^image\/(jpeg|png|webp)$/.test(f.type)){toast('Use JPG, PNG or WebP');continue}try{tmp.push({blob:await square(f)})}catch{toast('Could not open that photo')}}paintTh()};
-$('#th').onclick=e=>{const b=e.target.closest('button');if(b){tmp.splice(+b.dataset.i,1);paintTh()}};
+if(!/^image\/(jpeg|png|webp)$/.test(f.type)){toast('Use JPG, PNG or WebP');continue}try{tmp.push({blob:await square(f)})}catch{toast('Could not open that photo')}}paintTh();updateProfileProgress()};
+$('#th').onclick=e=>{const b=e.target.closest('button');if(b){tmp.splice(+b.dataset.i,1);paintTh();updateProfileProgress()}};
 $('#save').onclick=async()=>{const v=id=>$('#'+id).value.trim(),a=+v('fa');
 if(!v('fn'))return err('#e3','Add your first name.');if(!(a>=18&&a<=40))return err('#e3','MukMatch is for students aged 18 and above.');if(!tmp.length)return err('#e3','Add at least one photo.');
 $('#save').disabled=true;err('#e3','Saving…');const paths=[],fresh=[];
@@ -209,7 +230,7 @@ const gone=(me&&me.photos||[]).filter(x=>!paths.includes(x));if(gone.length)awai
 /* app shell */
 async function app(){show('s-app');view('discover');$('#mename').textContent=me.name+', '+me.age;await loadQueue();loadUnread();
 if(!window._unreadTimer)window._unreadTimer=setInterval(()=>{if(!document.hidden)loadUnread()},20000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadUnread()})}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadUnread()});showGuide(false)}
 /* unread message badges */
 async function loadUnread(){const{data,error}=await sb.rpc('unread_summary');if(error)return;
 UN=Object.fromEntries((data||[]).map(x=>[x.match_id,x.unread]));paintBadges()}
@@ -218,10 +239,13 @@ if(total>0){b.textContent=total>9?'9+':total;b.classList.remove('hide')}else b.c
 document.title=(total>0?`(${total>9?'9+':total}) `:'')+BASE_TITLE;
 if(mplist.length)paintMatchList()}
 $('#tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;view(b.dataset.v);if(b.dataset.v==='matches')loadMatches();if(b.dataset.v==='buzz')loadBuzz();if(b.dataset.v==='events')loadEvents()};
+$('#openGuide').onclick=()=>showGuide(true);
 
 /* discover */
 async function loadQueue(){const{data:seen}=await sb.from('likes').select('to_id');const s=new Set((seen||[]).map(x=>x.to_id));
-const{data}=await sb.from('profiles').select('*').eq('gender',me.want).eq('want',me.gender).neq('id',uid).limit(100);
+$('#deck').innerHTML='<div class="empty">Loading profiles…</div>';
+const{data,error}=await sb.from('profiles').select('*').eq('gender',me.want).eq('want',me.gender).neq('id',uid).limit(100);
+if(error){$('#deck').innerHTML='<div class="empty"><b>Could not load profiles</b><button class="btn sm" id="retryDeck">Try again</button></div>';$('#retryDeck').onclick=loadQueue;return}
 queue=(data||[]).filter(p=>!s.has(p.id));
 draw()}
 async function draw(){const p=queue[0],d=$('#deck');$('#acts').classList.toggle('hide',!p);
@@ -246,11 +270,14 @@ if(kind!=='pass'){const[a,b]=[uid,p.id].sort();const{data:m}=await sb.from('matc
 if(m)modal(`<div style="font-size:3.4rem">💘</div><h2>It's a match!</h2><p>You and ${esc(p.name)} like each other. Break the ice.</p><button class="btn" data-x="chat">Say hi to ${esc(p.name)}</button><br><br><button class="btn ghost sm" data-x="keep">Keep swiping</button>`,async x=>{if(x==='chat'){view('matches');await loadMatches();const it=mplist.find(y=>y.m.id===m.id);it&&openChat(it)}})}
 busy=false;draw()}
 $('#acts').onclick=e=>{const b=e.target.closest('button');if(b)act(b.dataset.a)};
-async function report(p){const r=prompt('What is the problem? (optional)');if(r===null)return;await sb.from('reports').insert({reporter:uid,reported:p.id,reason:r.slice(0,300)});toast('Reported. Thank you for keeping Muk safe.')}
-async function block(p){const{error}=await sb.from('blocks').insert({blocker:uid,blocked:p.id});toast(error?'Could not block':p.name+' is blocked')}
+async function report(p){const r=await askInput({title:'Report profile',message:`Tell us what went wrong with ${p.name}'s profile.`,placeholder:'Optional details help moderators review faster.',ok:'Send report'});if(r===null)return;
+const{error}=await sb.from('reports').insert({reporter:uid,reported:p.id,reason:r.slice(0,300)});toast(error?'Could not send report. Try again.':'Reported. Thank you for keeping Muk safe.')}
+async function block(p){const ok=await askConfirm({title:'Block this profile?',message:`You will no longer see ${p.name}. You can still report them first if needed.`,ok:'Block profile',danger:true});if(!ok)return;
+const{error}=await sb.from('blocks').insert({blocker:uid,blocked:p.id});toast(error?'Could not block':p.name+' is blocked')}
 
 /* matches and live chat */
-async function loadMatches(){const{data:ms}=await sb.from('matches').select('*').order('created_at',{ascending:false});
+async function loadMatches(){$('#mlist').innerHTML='<div class="empty">Loading matches…</div>';const{data:ms,error:mErr}=await sb.from('matches').select('*').order('created_at',{ascending:false});
+if(mErr){$('#mlist').innerHTML='<div class="empty"><b>Could not load matches</b><button class="btn sm" id="retryMatches">Try again</button></div>';$('#retryMatches').onclick=loadMatches;return}
 const ids=(ms||[]).map(m=>m.a===uid?m.b:m.a);const{data:ps}=ids.length?await sb.from('profiles').select('*').in('id',ids):{data:[]};
 await sign((ps||[]).map(p=>p.photos[0]));
 mplist=(ms||[]).map(m=>({m,p:(ps||[]).find(x=>x.id===(m.a===uid?m.b:m.a))})).filter(x=>x.p);
@@ -259,20 +286,24 @@ function paintMatchList(){$('#mlist').innerHTML=mplist.length?mplist.map((x,i)=>
 return `<button class="item" data-i="${i}"><div class="av" style="${bgOf(x.p)}">${urlMap[x.p.photos[0]]?'':'🙂'}</div><div class="t"><b class="${n?'new':''}">${esc(x.p.name)}, ${x.p.age}</b><div class="meta">${esc(x.p.college)} · ${esc(x.p.hall)}</div></div>${n?`<span class="unread">${n>9?'9+':n}</span>`:''}</button>`}).join(''):'<div class="empty"><b>No matches yet</b>Swipe right on someone who makes you smile.</div>'}
 $('#mlist').onclick=e=>{const b=e.target.closest('.item');if(b)openChat(mplist[+b.dataset.i])};
 async function markRead(matchId){await sb.from('reads').upsert({match_id:matchId,user_id:uid,last_read:new Date().toISOString()});UN[matchId]=0;paintBadges()}
-async function openChat(x){cur=x;msgs=[];view('chat');$('#cav').style.cssText=bgOf(x.p);$('#cav').textContent=urlMap[x.p.photos[0]]?'':'🙂';$('#cnm').textContent=x.p.name;$('#cmt').textContent=x.p.college+' · '+x.p.hall;paintMsgs();
+async function openChat(x){cur=x;msgs=[];view('chat');$('#cav').style.cssText=bgOf(x.p);$('#cav').textContent=urlMap[x.p.photos[0]]?'':'🙂';$('#cnm').textContent=x.p.name;$('#cmt').textContent=x.p.college+' · '+x.p.hall;$('#chatStatus').textContent='';paintMsgs();
 const{data}=await sb.from('messages').select('*').eq('match_id',x.m.id).order('created_at').limit(200);msgs=data||[];paintMsgs();markRead(x.m.id);
 if(chan)sb.removeChannel(chan);
 chan=sb.channel('chat-'+x.m.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'match_id=eq.'+x.m.id},pl=>{addMsg(pl.new);if(pl.new.sender!==uid&&!$('#v-chat').classList.contains('hide'))markRead(x.m.id)}).subscribe()}
 function addMsg(m){if(msgs.some(x=>x.id===m.id))return;msgs.push(m);paintMsgs()}
 function paintMsgs(){$('#msgs').innerHTML=msgs.length?msgs.map(m=>`<div class="m ${m.sender===uid?'me':''}">${esc(m.body)}</div>`).join(''):'<div class="empty">No messages yet. Say hi 👋</div>';window.scrollTo(0,document.body.scrollHeight)}
-async function send(){const t=$('#ci').value.trim();if(!t||!cur)return;$('#ci').value='';const{data,error}=await sb.from('messages').insert({match_id:cur.m.id,sender:uid,body:t}).select().single();if(error)return toast('Message not sent');addMsg(data)}
+async function send(){const t=$('#ci').value.trim();if(!t||!cur||sending)return;sending=true;$('#cs').disabled=true;$('#chatStatus').textContent='Sending…';
+const{data,error}=await sb.from('messages').insert({match_id:cur.m.id,sender:uid,body:t}).select().single();
+if(error){$('#chatStatus').textContent='Message failed. Please try again.';$('#cs').disabled=false;sending=false;return}
+$('#ci').value='';addMsg(data);$('#chatStatus').textContent='Sent';$('#cs').disabled=false;sending=false}
 $('#cs').onclick=send;$('#ci').onkeydown=e=>{if(e.key==='Enter')send()};
 $('#back').onclick=()=>{view('matches');loadMatches()};
 $('#crep').onclick=()=>report(cur.p);
 $('#cblk').onclick=async()=>{await block(cur.p);view('matches');loadMatches()};
 
 /* buzz */
-async function loadBuzz(){const{data:f}=await sb.from('buzz_feed').select('*').order('created_at',{ascending:false}).limit(50);
+async function loadBuzz(){$('#blist').innerHTML='<div class="empty">Loading posts…</div>';const{data:f,error:fErr}=await sb.from('buzz_feed').select('*').order('created_at',{ascending:false}).limit(50);
+if(fErr){$('#blist').innerHTML='<div class="empty"><b>Could not load Campus Buzz</b><button class="btn sm" id="retryBuzz">Try again</button></div>';$('#retryBuzz').onclick=loadBuzz;return}
 const ids=(f||[]).map(x=>x.id);const{data:r}=ids.length?await sb.from('reactions').select('*').in('post_id',ids):{data:[]};
 $('#blist').innerHTML=(f||[]).map(p=>`<div class="post"><b>${esc(p.who)}</b><div>${esc(p.body)}</div><div class="rx">${['🔥','😂','💘'].map(k=>{const rs=(r||[]).filter(x=>x.post_id===p.id&&x.emoji===k),on=rs.some(x=>x.user_id===uid);return `<button class="${on?'on':''}" data-p="${p.id}" data-k="${k}" data-on="${on?1:0}">${k} ${rs.length}</button>`}).join('')}</div></div>`).join('')||'<div class="empty"><b>No posts yet</b>Be the first.</div>'}
 $('#blist').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const q=sb.from('reactions'),k={post_id:+b.dataset.p,user_id:uid,emoji:b.dataset.k};
@@ -282,7 +313,9 @@ const{error}=await sb.from('posts').insert({author:uid,anon:$('#ba').checked,bod
 
 /* events */
 async function loadEvents(){
-const[{data:ev},{data:cn},{data:mine}]=await Promise.all([sb.from('events').select('*').gte('starts_at',new Date().toISOString()).order('starts_at').limit(30),sb.from('event_counts').select('*'),sb.from('rsvps').select('event_id')]);
+$('#elist').innerHTML='<div class="empty">Loading events…</div>';
+const[{data:ev,error:eErr},{data:cn},{data:mine}]=await Promise.all([sb.from('events').select('*').gte('starts_at',new Date().toISOString()).order('starts_at').limit(30),sb.from('event_counts').select('*'),sb.from('rsvps').select('event_id')]);
+if(eErr){$('#elist').innerHTML='<div class="empty"><b>Could not load events</b><button class="btn sm" id="retryEvents">Try again</button></div>';$('#retryEvents').onclick=loadEvents;return}
 const n=Object.fromEntries((cn||[]).map(x=>[x.event_id,x.n])),go=new Set((mine||[]).map(x=>x.event_id));
 $('#elist').innerHTML=(ev||[]).map(e=>{const d=new Date(e.starts_at),on=go.has(e.id);
 return `<div class="ev"><div class="d">${d.getDate()}<small>${d.toLocaleDateString('en-GB',{month:'short'})}</small></div><div style="flex:1"><b>${esc(e.title)}</b><div class="meta">${esc(e.blurb||'')}</div><div class="meta">${d.toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit'})} · ${n[e.id]||0} going</div></div><button class="btn sm ${on?'gold':''}" data-i="${e.id}" data-on="${on?1:0}">${on?'Going ✓':"I'm in"}</button></div>`}).join('')||'<div class="empty"><b>No upcoming events</b>Check back soon.</div>'}
@@ -294,12 +327,12 @@ function initForm(){$('#fc').innerHTML=COL.map(c=>`<option>${c}</option>`).join(
 async function editProfile(){editing=true;await sign(me.photos);tmp=me.photos.map(path=>({path}));sel=new Set(me.interests);initForm();
 $('#fn').value=me.name;$('#fg').value=me.gender;setHalls();$('#fw').value=me.want;$('#fa').value=me.age;$('#fy').value=me.year;$('#fc').value=me.college;$('#fh').value=me.hall;$('#fq').value=me.prompt||'';
 $$('#fi .chip').forEach(c=>c.classList.toggle('on',sel.has(c.textContent)));paintTh();
-$('#save').disabled=false;$('#save').textContent='Save changes';$('#stitle').textContent='Edit profile';err('#e3','');$('#cancel').classList.remove('hide');show('s-setup')}
+$('#save').disabled=false;$('#save').textContent='Save changes';$('#stitle').textContent='Edit profile';err('#e3','');$('#cancel').classList.remove('hide');updateProfileProgress();show('s-setup')}
 $('#edit').onclick=editProfile;
-$('#cancel').onclick=()=>{editing=false;tmp=[];sel=new Set();show('s-app')};
+$('#cancel').onclick=()=>{editing=false;tmp=[];sel=new Set();setProfileStep(1,'Basic details');show('s-app')};
 
 /* account */
 $('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
-$('#del').onclick=async()=>{if(!confirm('Delete your account, photos, matches and messages? This cannot be undone.'))return;
+$('#del').onclick=async()=>{const ok=await askConfirm({title:'Delete account and data?',message:'This deletes your profile, photos, matches and messages. This cannot be undone.',ok:'Delete everything',danger:true});if(!ok)return;
 await sb.storage.from('photos').remove(me.photos);const{error}=await sb.rpc('delete_my_account');if(error)return toast('Could not delete. Try again.');await sb.auth.signOut();location.reload()};
 </script></body></html>

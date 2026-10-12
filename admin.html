@@ -35,6 +35,12 @@ input[type=checkbox]{width:auto}
 .row2{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .empty{text-align:center;padding:32px 12px;color:var(--mute)}.empty b{display:block;font-size:1.2rem;color:var(--ink)}
 .ev{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.help{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:0 0 12px;color:var(--mute);font-size:.88rem}
+.help b{color:var(--ink)}
+.modal{position:fixed;inset:0;background:rgba(20,5,10,.6);display:grid;place-items:center;padding:20px;z-index:10}
+.modal .box{background:var(--card);border-radius:24px;padding:20px;max-width:420px;text-align:center}
+.modal textarea{width:100%;min-height:90px;resize:vertical}
+.modal .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;z-index:12;font-weight:600;max-width:90%}
 </style></head>
 <body><div class="wrap">
@@ -52,7 +58,7 @@ input[type=checkbox]{width:auto}
 <section id="s-dash" class="scr hide">
 <div id="tabs"><button data-t="reports" class="on">Reports</button><button data-t="events">Events</button><button data-t="log">Log</button></div>
 
-<div id="v-reports" class="vw"><label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:0 0 12px"><input type="checkbox" id="showres"> Show handled reports too</label><div id="rlist"></div></div>
+<div id="v-reports" class="vw"><p class="help"><b>Moderation tip:</b> add clear notes so your team can understand why action was taken.</p><label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:0 0 12px"><input type="checkbox" id="showres"> Show handled reports too</label><div id="rlist"></div></div>
 
 <div id="v-events" class="vw hide"><div class="panel"><h2 id="etitle" style="margin-top:0">Add an event</h2>
 <label for="et">Title</label><input id="et" maxlength="80"><label for="eb">Short description (optional)</label><input id="eb" maxlength="120"><label for="ed">Date and time</label><input id="ed" type="datetime-local">
@@ -68,6 +74,9 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const err=(s,t)=>$(s).textContent=t;
 let sb,G={},EV={},editId=null,urlMap={};
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function modal(h,cb){const m=document.createElement('div');m.className='modal';m.innerHTML='<div class="box">'+h+'</div>';m.onclick=e=>{const x=e.target.closest('[data-x]');if(e.target===m||x){const a=x&&x.dataset.x;if(x&&cb)cb(a,m);m.remove()}};document.body.appendChild(m)}
+function askConfirm({title,message,ok='Continue',cancel='Cancel',danger=false}){return new Promise(done=>{modal(`<h2>${esc(title)}</h2><p>${esc(message)}</p><div class="actions"><button class="btn ${danger?'danger':'sm'}" data-x="ok">${esc(ok)}</button><button class="btn ghost sm" data-x="cancel">${esc(cancel)}</button></div>`,x=>done(x==='ok'))})}
+function askInput({title,message,placeholder='',ok='Continue',cancel='Cancel'}){return new Promise(done=>{const id='note-'+Math.random().toString(36).slice(2,8);modal(`<h2>${esc(title)}</h2><p>${esc(message)}</p><textarea id="${id}" maxlength="300" placeholder="${esc(placeholder)}"></textarea><div class="actions"><button class="btn" data-x="ok">${esc(ok)}</button><button class="btn ghost sm" data-x="cancel">${esc(cancel)}</button></div>`,(x,m)=>{if(x!=='ok')return done(null);done((m.querySelector('#'+id)?.value||'').trim())});setTimeout(()=>document.getElementById(id)?.focus(),0)})}
 function show(id){$$('.scr').forEach(s=>s.classList.add('hide'));$('#'+id).classList.remove('hide');$('#out').classList.toggle('hide',id==='s-login'||id==='s-config')}
 function tab(t){$$('.vw').forEach(s=>s.classList.add('hide'));$('#v-'+t).classList.remove('hide');$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
 if(t==='reports')loadReports();if(t==='events')loadEvents();if(t==='log')loadLog()}
@@ -93,7 +102,7 @@ $('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)tab(b.dataset.t)}
 $('#showres').onchange=loadReports;
 async function loadReports(){const el=$('#rlist');el.innerHTML='<div class="empty">Loading…</div>';
 let q=sb.from('reports').select('*').order('created_at',{ascending:false}).limit(300);if(!$('#showres').checked)q=q.eq('resolved',false);
-const{data:rs,error}=await q;if(error){el.innerHTML='<div class="empty">'+esc(error.message)+'</div>';return}
+const{data:rs,error}=await q;if(error){el.innerHTML='<div class="empty"><b>Could not load reports</b><div>'+esc(error.message)+'</div><button class="btn sm" id="retryReports">Try again</button></div>';$('#retryReports').onclick=loadReports;return}
 const ids=[...new Set(rs.flatMap(r=>[r.reported,r.reporter]).filter(Boolean))];
 const{data:ps}=ids.length?await sb.from('profiles').select('*').in('id',ids):{data:[]};
 const P=Object.fromEntries((ps||[]).map(p=>[p.id,p]));
@@ -110,8 +119,8 @@ ${list.map(r=>`<div class="rs ${r.resolved?'done':''}">${esc(r.reason||'(no reas
 $('#rlist').onclick=async e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const id=b.dataset.id,list=G[id]||[];
 if(b.dataset.a==='dismiss'){const{error}=await sb.from('reports').update({resolved:true}).in('id',list.filter(r=>!r.resolved).map(r=>r.id));
 toast(error?error.message:'Reports dismissed');return loadReports()}
-if(b.dataset.a==='remove'){const note=prompt('Why are you removing this profile? This note goes in the log.','');if(note===null)return;
-if(!confirm('Remove this profile and ban the account? They cannot create another profile with it. This cannot be undone here.'))return;
+if(b.dataset.a==='remove'){const note=await askInput({title:'Remove and ban profile',message:'Add a moderation note for the log.',placeholder:'Reason for removal',ok:'Continue'});if(note===null)return;
+const ok=await askConfirm({title:'Confirm removal',message:'This removes the profile and bans the account. They cannot sign up again with it.',ok:'Remove and ban',danger:true});if(!ok)return;
 const{data:paths,error}=await sb.rpc('admin_remove_profile',{target:id,note});if(error)return toast(error.message);
 if(paths&&paths.length)await sb.storage.from('photos').remove(paths);toast('Profile removed and account banned');loadReports()}};
 
@@ -119,14 +128,14 @@ if(paths&&paths.length)await sb.storage.from('photos').remove(paths);toast('Prof
 const toLocal=iso=>{const d=new Date(iso);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)};
 function resetForm(){editId=null;$('#et').value=$('#eb').value=$('#ed').value='';err('#e2','');$('#etitle').textContent='Add an event';$('#esave').textContent='Add event';$('#ecancel').classList.add('hide')}
 async function loadEvents(){const[{data:ev,error},{data:cn}]=await Promise.all([sb.from('events').select('*').order('starts_at',{ascending:false}).limit(60),sb.from('event_counts').select('*')]);
-if(error){$('#elist').innerHTML='<div class="empty">'+esc(error.message)+'</div>';return}
+if(error){$('#elist').innerHTML='<div class="empty"><b>Could not load events</b><div>'+esc(error.message)+'</div><button class="btn sm" id="retryAdminEvents">Try again</button></div>';$('#retryAdminEvents').onclick=loadEvents;return}
 const n=Object.fromEntries((cn||[]).map(x=>[x.event_id,x.n]));EV=Object.fromEntries(ev.map(e=>[e.id,e]));
 $('#elist').innerHTML=ev.map(e=>{const past=new Date(e.starts_at)<new Date();
 return `<div class="card ev" style="${past?'opacity:.6':''}"><div><b>${esc(e.title)}</b>${past?' <span class="meta">(past)</span>':''}<div class="meta">${esc(e.blurb||'')}</div><div class="meta">${new Date(e.starts_at).toLocaleString()} · ${n[e.id]||0} going</div></div>
 <div class="row2" style="margin:0"><button class="btn ghost sm" data-a="edit" data-id="${e.id}">Edit</button><button class="btn danger sm" data-a="del" data-id="${e.id}">Delete</button></div></div>`}).join('')||'<div class="empty"><b>No events yet</b>Add the first one above.</div>'}
 $('#elist').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const id=+b.dataset.id;
 if(b.dataset.a==='edit'){const x=EV[id];editId=id;$('#et').value=x.title;$('#eb').value=x.blurb||'';$('#ed').value=toLocal(x.starts_at);$('#etitle').textContent='Edit event';$('#esave').textContent='Save changes';$('#ecancel').classList.remove('hide');scrollTo(0,0)}
-if(b.dataset.a==='del'){if(!confirm('Delete this event and its RSVPs?'))return;const{error}=await sb.from('events').delete().eq('id',id);toast(error?error.message:'Event deleted');loadEvents()}};
+if(b.dataset.a==='del'){const ok=await askConfirm({title:'Delete event?',message:'This removes the event and all RSVPs.',ok:'Delete event',danger:true});if(!ok)return;const{error}=await sb.from('events').delete().eq('id',id);toast(error?error.message:'Event deleted');loadEvents()}};
 $('#esave').onclick=async()=>{const t=$('#et').value.trim(),d=$('#ed').value;if(!t||!d)return err('#e2','Add a title and a date.');
 const row={title:t,blurb:$('#eb').value.trim()||null,starts_at:new Date(d).toISOString()};
 const{error}=editId?await sb.from('events').update(row).eq('id',editId):await sb.from('events').insert(row);
@@ -135,7 +144,7 @@ $('#ecancel').onclick=resetForm;
 
 /* moderation log */
 async function loadLog(){const{data,error}=await sb.from('mod_log').select('*').order('created_at',{ascending:false}).limit(100);
-if(error){$('#llist').innerHTML='<div class="empty">'+esc(error.message)+'</div>';return}
+if(error){$('#llist').innerHTML='<div class="empty"><b>Could not load moderation log</b><div>'+esc(error.message)+'</div><button class="btn sm" id="retryLog">Try again</button></div>';$('#retryLog').onclick=loadLog;return}
 $('#llist').innerHTML=(data||[]).map(l=>`<div class="card"><b>${esc(l.target_name||'Unknown')}</b> <span class="meta">removed ${new Date(l.created_at).toLocaleString()}</span>
 <div>${esc(l.note||'(no note)')}</div>${(l.report_reasons||[]).length?`<div class="meta">Reports at the time: ${l.report_reasons.map(r=>esc(r||'no reason')).join(' · ')}</div>`:''}</div>`).join('')||'<div class="empty"><b>Nothing here yet</b>Removals will be listed.</div>'}
 </script></body></html>
