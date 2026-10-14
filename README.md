@@ -2,9 +2,13 @@
 
 **Find your person on the Hill.**
 
-MukMatch is a web platform that helps university students connect, interact, and find dates or potential romantic partners.
+MukMatch is a static web platform that helps university students connect, interact, and find dates or potential romantic partners.
 
 🔗 **Live demo:** https://walterisalion.github.io/mukmatch/
+
+## Project status
+
+MukMatch is a prototype/starter app for student discovery, matching, and campus community interactions. It is designed to run as a static frontend backed by Supabase for auth, storage, and database logic.
 
 ## Features
 
@@ -63,11 +67,11 @@ The app reads runtime config from `config.js` (next to `index.html` and `admin.h
 
 Use only the **anon/publishable** key from Supabase. Never use `service_role` or any secret key in browser code.
 
-> `config.js` is now listed in `.gitignore` for safer local usage. The repository still keeps the existing tracked `config.js` for current deployment compatibility; replace values locally for your own environment.
+> `config.js` is now listed in `.gitignore` for safer local usage. This keeps project-specific credentials out of version control while preserving a local override for your environment.
 
 ### 2) Set up Supabase database + storage
 
-Run the SQL in [`migrations/001_supabase_schema.sql`](migrations/001_supabase_schema.sql) in Supabase SQL Editor.
+Run the SQL in [`migrations/001_supabase_schema.sql`](migrations/001_supabase_schema.sql) in the Supabase SQL Editor.
 
 This migration creates the database objects inferred from `index.html` and `admin.html`, including:
 
@@ -82,18 +86,18 @@ This migration creates the database objects inferred from `index.html` and `admi
 
 Some behavior cannot be fully and safely inferred from frontend code alone:
 
-1. **Ban durability after account removal**  
+1. **Ban durability after account removal**
    `admin_remove_profile` deletes the target auth user and app data. If you need permanent email/device-level bans, add a separate Supabase auth hook or external moderation workflow.
 
-2. **Auth URL configuration**  
+2. **Auth URL configuration**
    In Supabase Auth → URL Configuration, add:
    - Site URL (e.g. your GitHub Pages URL)
    - Redirect URL for password reset/email links (same origin/path used by the app)
 
-3. **SMTP/email provider setup**  
+3. **SMTP/email provider setup**
    Configure Supabase Auth email delivery for sign-up verification and password reset.
 
-4. **Realtime**  
+4. **Realtime**
    The migration attempts to add `public.messages` to `supabase_realtime`. If your project differs, enable Realtime for `messages` manually.
 
 ### 3) Create organiser/admin access
@@ -175,6 +179,14 @@ Add screenshots or GIFs here when available (do not use fabricated media):
 - Events
 - Admin dashboard
 
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+
+## Security
+
+Please review [SECURITY.md](SECURITY.md) before reporting any vulnerability or security issue.
+
 ## How it was built
 
 MukMatch was built by a team of four and tested with 15 real users. Feedback from testing led to two changes:
@@ -188,4 +200,35 @@ MukMatch was built by a team of four and tested with 15 real users. Feedback fro
 
 ## License
 
-No license has been specified yet. Until a license is added, all rights are reserved by the copyright holder.
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+Copyright (c) 2026 Walter Isalion
+
+"""
+
+"""
+
+
+"""
+
+
+"""
+
+
+"""
+
+
+"""
+
+
+"""
+
+
+"""
+
+
+"""
+
+
