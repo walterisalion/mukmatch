@@ -1,14 +1,19 @@
 # MukMatch 💘
 
+[![Live demo](https://img.shields.io/badge/demo-live-ff4f8b)](https://walterisalion.github.io/mukmatch/)
+[![Hosted with GitHub Pages](https://img.shields.io/badge/hosted%20with-GitHub%20Pages-222222?logo=github)](https://pages.github.com/)
+
 **Find your person on the Hill.**
 
 MukMatch is a static web platform that helps university students connect, interact, and find dates or potential romantic partners.
 
-🔗 **Live demo:** https://walterisalion.github.io/mukmatch/
-
 ## Project status
 
-MukMatch is a prototype/starter app for student discovery, matching, and campus community interactions. It is designed to run as a static frontend backed by Supabase for auth, storage, and database logic.
+MukMatch is a prototype/starter app for student discovery, matching, and campus community interactions. It runs as a static frontend backed by Supabase for authentication, storage, and database functionality.
+
+The live demo is intended for demonstration and testing. Before using the app with real users, review the security, moderation, privacy, and deployment steps below.
+
+🔗 **Live demo:** https://walterisalion.github.io/mukmatch/
 
 ## Features
 
@@ -20,6 +25,10 @@ MukMatch is a prototype/starter app for student discovery, matching, and campus 
 - **Email authentication:** create an account with any email address, confirm it by email, and reset your password
 - **Admin dashboard:** organisers review reports, manage events, and moderate reported accounts through `admin.html`
 - **Theme support:** switch between light and dark mode
+
+## Why MukMatch exists
+
+MukMatch is designed around campus-specific discovery: helping students meet people connected to the same university community while providing basic tools for consent, reporting, blocking, and safer meetups.
 
 ## Safety and privacy
 
@@ -67,7 +76,7 @@ The app reads runtime config from `config.js` (next to `index.html` and `admin.h
 
 Use only the **anon/publishable** key from Supabase. Never use `service_role` or any secret key in browser code.
 
-> `config.js` is now listed in `.gitignore` for safer local usage. This keeps project-specific credentials out of version control while preserving a local override for your environment.
+> `config.js` is listed in `.gitignore` for safer local usage. This keeps project-specific credentials out of version control while preserving a local override for your environment.
 
 ### 2) Set up Supabase database + storage
 
@@ -86,42 +95,39 @@ This migration creates the database objects inferred from `index.html` and `admi
 
 Some behavior cannot be fully and safely inferred from frontend code alone:
 
-1. **Ban durability after account removal**
+1. **Ban durability after account removal**  
    `admin_remove_profile` deletes the target auth user and app data. If you need permanent email/device-level bans, add a separate Supabase auth hook or external moderation workflow.
 
-2. **Auth URL configuration**
-   In Supabase Auth → URL Configuration, add:
-   - Site URL (e.g. your GitHub Pages URL)
-   - Redirect URL for password reset/email links (same origin/path used by the app)
+2. **Auth URL configuration**  
+   In Supabase Auth → URL Configuration, add the site URL and the redirect URL used by password reset and email links.
 
-3. **SMTP/email provider setup**
+3. **SMTP/email provider setup**  
    Configure Supabase Auth email delivery for sign-up verification and password reset.
 
-4. **Realtime**
+4. **Realtime**  
    The migration attempts to add `public.messages` to `supabase_realtime`. If your project differs, enable Realtime for `messages` manually.
 
 ### 3) Create organiser/admin access
 
-Add organiser users (after they exist in `auth.users`) by inserting their UUID into `public.admins`:
+Add organiser users after they exist in `auth.users` by inserting their UUID into `public.admins`:
 
 ```sql
 insert into public.admins (user_id) values ('<auth-user-uuid>');
 ```
 
-The admin dashboard (`admin.html`) relies on this table and RLS policies for access gating.
+The admin dashboard (`admin.html`) relies on this table and its RLS policies for access gating.
 
-### 4) Quick RLS/storage verification
+### 4) Verify RLS and storage
 
 After migration:
 
 1. Confirm RLS is enabled on all created tables.
-2. Validate access with two different test users:
-   - user A cannot edit user B profile/messages/reads
-   - non-admin cannot read reports or moderation log
-   - admin can read reports/mod log and manage events
-3. Validate storage:
-   - each user can upload/delete photos only in their own `<uid>/...` folder
-   - authenticated users can resolve signed photo URLs needed by discover/match screens
+2. Test with two separate accounts:
+   - User A cannot edit User B's profile, messages, or reads.
+   - A non-admin cannot read reports or the moderation log.
+   - An admin can read reports and manage events.
+3. Confirm that each user can upload and delete photos only in their own `<uid>/...` folder.
+4. Confirm authenticated users can resolve the signed photo URLs used by discovery and matching screens.
 
 ### Run locally
 
@@ -145,36 +151,39 @@ Opening `index.html` directly with a `file://` URL may cause authentication, mod
 
 ## Deployment
 
-The site is static HTML/CSS/JS and works on GitHub Pages or any static host:
+The site is static HTML/CSS/JS and works on GitHub Pages or another static host:
 
 1. Push the repository to GitHub.
 2. Enable GitHub Pages for the repository branch and folder containing the site.
-3. Deploy with your own `config.js` (URL + anon/publishable key only).
-4. Add your deployed origin to Supabase Auth redirect URLs.
-5. Confirm production RLS/storage policy behavior before inviting users.
+3. Deploy with your own `config.js` containing only the project URL and anon/publishable key.
+4. Add the deployed origin to Supabase Auth redirect URLs.
+5. Confirm production RLS and storage policy behavior before inviting users.
+6. Run the manual verification checklist below against the deployed site.
 
 ## Manual verification checklist
 
-- [ ] Sign-up with email + password
-- [ ] Email confirmation code and resend flow
-- [ ] Sign-in and password reset flow
-- [ ] Profile creation/edit (name, age, college, interests, prompt, photos)
-- [ ] Discover like/pass interactions
-- [ ] Mutual-like match appears
-- [ ] Chat send/receive and unread badge updates
-- [ ] Campus Buzz posting and reactions
-- [ ] Event list and RSVP toggling
-- [ ] Report + Block from discover/chat flows
-- [ ] Account deletion removes profile data and signs user out
-- [ ] Organiser dashboard access for admins only
-- [ ] Report dismissal and remove/ban flow in admin dashboard
+- [ ] Sign up with email and password
+- [ ] Complete email confirmation and resend flow
+- [ ] Sign in and reset a password
+- [ ] Create and edit a profile, including photos
+- [ ] Like and pass on profiles
+- [ ] Confirm a mutual-like match appears
+- [ ] Send and receive chat messages; verify unread badges
+- [ ] Create Campus Buzz posts and reactions
+- [ ] View events and toggle RSVPs
+- [ ] Report and block from relevant user flows
+- [ ] Delete an account and verify sign-out/data removal
+- [ ] Confirm only admins can access the organiser dashboard
+- [ ] Test report dismissal and remove/ban flows in the admin dashboard
 
-## Screenshots / demo media (placeholder)
+## Screenshots / demo media
 
-Add screenshots or GIFs here when available (do not use fabricated media):
+Screenshots and GIFs can be added here when available. Do not use fabricated media or include real user data.
+
+Suggested captures:
 
 - Discovery screen
-- Matches/chat
+- Matches and chat
 - Campus Buzz
 - Events
 - Admin dashboard
@@ -185,7 +194,7 @@ Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before
 
 ## Security
 
-Please review [SECURITY.md](SECURITY.md) before reporting any vulnerability or security issue.
+Please review [SECURITY.md](SECURITY.md) before reporting a vulnerability or security issue.
 
 ## How it was built
 
@@ -202,33 +211,4 @@ MukMatch was built by a team of four and tested with 15 real users. Feedback fro
 
 This project is licensed under the [MIT License](LICENSE).
 
----
-
 Copyright (c) 2026 Walter Isalion
-
-"""
-
-"""
-
-
-"""
-
-
-"""
-
-
-"""
-
-
-"""
-
-
-"""
-
-
-"""
-
-
-"""
-
-
